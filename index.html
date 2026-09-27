@@ -1431,13 +1431,17 @@ function getAverageRatingColor(value) {
   if (!Number.isFinite(rating) || rating < 1) return '';
 
   const stops = [
-    [1, [244, 190, 190]],
-    [5, [255, 244, 190]],
+    [1, [224, 226, 228]],
+    [5, [224, 226, 228]],
+    [6, [248, 202, 164]],
+    [7, [255, 242, 180]],
     [10, [190, 226, 198]]
   ];
   const clampedRating = Math.min(rating, 10);
-  const lowerStop = clampedRating < 5 ? stops[0] : stops[1];
-  const upperStop = clampedRating < 5 ? stops[1] : stops[2];
+  const upperIndex = stops.findIndex(([threshold]) => clampedRating < threshold);
+  if (upperIndex === -1) return `rgb(${stops.at(-1)[1].join(', ')})`;
+  const lowerStop = stops[upperIndex - 1];
+  const upperStop = stops[upperIndex];
   const progress = (clampedRating - lowerStop[0]) / (upperStop[0] - lowerStop[0]);
   const channels = lowerStop[1].map((channel, index) =>
     Math.round(channel + (upperStop[1][index] - channel) * progress));
