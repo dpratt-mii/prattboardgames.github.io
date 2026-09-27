@@ -684,10 +684,13 @@ function openGoogleSearch(query) {
 const VALUE3_FIELD = 'boardgame.average';
 const RANK_ID_FIELD = 'boardgames_ranks.id';
 
+const COLLECTION_FLAGS = ['own', 'fortrade', 'want', 'wanttobuy', 'wanttoplay', 'prevowned', 'preordered', 'wishlist'];
+const initialCollectionFilter = new URLSearchParams(window.location.search).get('collection')?.trim().toLowerCase();
 let activeView = 'collection';
 let thumbnailEnabled = true;
-let selectedCollectionValues = new Set(['fortrade']);
-const COLLECTION_FLAGS = ['own', 'fortrade', 'want', 'wanttobuy', 'wanttoplay', 'prevowned', 'preordered', 'wishlist'];
+let selectedCollectionValues = new Set(COLLECTION_FLAGS.includes(initialCollectionFilter)
+  ? [initialCollectionFilter]
+  : ['fortrade']);
 const WRAP_FIELDS = new Set(['description', 'categories', 'mechanics', 'alternate_names', 'families', 'publishers']);
 const COLLECTION_DETAILS_HEADERS = ['totalitems', 'termsofuse', 'pubdate', 'objecttype', 'objectid', 'subtype', 'collid', 'name', 'sortindex', 'yearpublished', 'image', 'thumbnail', 'minplayers', 'maxplayers', 'minplaytime', 'maxplaytime', 'playingtime', 'numowned', 'value', 'value2', 'value3', 'value4', 'value5', 'value6', 'own', 'prevowned', 'fortrade', 'want', 'wanttoplay', 'wanttobuy', 'wishlist', 'preordered', 'lastmodified', 'wishlistpriority', 'numplays', 'comment', 'originalname'];
 const USER_LOOKUP_COLUMNS = [
