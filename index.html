@@ -162,7 +162,6 @@
   body.collection-view:not(.thumbnail-view) .view-collection-table col:nth-child(5) { width: 180px !important; }
   body.collection-view:not(.thumbnail-view) .view-collection-table col:nth-child(6) { width: 96px !important; }
   body.collection-view:not(.thumbnail-view) .view-collection-table col:nth-child(7) { width: 96px !important; }
-  body.collection-view:not(.thumbnail-view) .view-collection-table col:nth-child(8) { width: 390px !important; }
   body.collection-view.thumbnail-view .view-collection-table col:nth-child(1) { width: 125px !important; }
   body.collection-view.thumbnail-view .view-collection-table col:nth-child(2) { width: 225px !important; }
   body.collection-view.thumbnail-view .view-collection-table col:nth-child(3) { width: 102px !important; }
@@ -171,7 +170,6 @@
   body.collection-view.thumbnail-view .view-collection-table col:nth-child(6) { width: 190px !important; }
   body.collection-view.thumbnail-view .view-collection-table col:nth-child(7) { width: 96px !important; }
   body.collection-view.thumbnail-view .view-collection-table col:nth-child(8) { width: 96px !important; }
-  body.collection-view.thumbnail-view .view-collection-table col:nth-child(9) { width: 390px !important; }
   .thumbnail-cell { padding: 8px !important; text-align: center; vertical-align: middle !important; }
   .collection-thumbnail { display: block; width: 100px; height: 120px; margin: 0 auto; object-fit: cover; }
   #gameDialog {
@@ -1187,7 +1185,11 @@ function buildColGroup(columns = getActiveColumns()) {
     : thumbnailEnabled ? [125] : [];
   columns.forEach((column, index) => {
     const col = document.createElement('col');
-    col.style.width = column.type === 'rules'
+    col.style.width = activeView === 'collection' && column.field === 'in_collection'
+      ? '47px'
+      : column.field === 'min_players' || column.field === 'max_players'
+      ? '190px'
+      : column.type === 'rules'
       ? rulesColumnWidth
       : column.type === 'googleSearch'
       ? searchColumnWidth
