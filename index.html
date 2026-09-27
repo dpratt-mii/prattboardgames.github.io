@@ -1,4 +1,4 @@
-DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -71,7 +71,7 @@ DOCTYPE html>
   .view-collection-table tbody td.status-cell.owned { color: #111; }
   .view-collection-table tbody td.status-cell.prev-owned { color: #14149b; }
   .view-collection-table tbody td.comment-cell {
-    white-space: pre-line;
+    white-space: nowrap;
     min-width: 360px;
     font-size: 18px;
     line-height: 1.3;
@@ -296,7 +296,7 @@ DOCTYPE html>
   .prompt-status.error { color: #b00020; }
   #promptOutput { width: 100%; min-height: 220px; box-sizing: border-box; padding: 10px; border: 1px solid #aab4bf; border-radius: 4px; font: 13px/1.4 Consolas, monospace; resize: vertical; }
   .rules-cell { text-align: center !important; vertical-align: middle !important; }
-  .rules-prompt-button { display: block; margin: 6px auto 0; }
+  .rules-prompt-button, .rules-button-pdf, .rules-search-button { display: block; margin: 6px auto 0; }
   .rules-button { padding: 7px 10px; border: 1px solid #2867a8; border-radius: 4px; color: #fff; background: #2867a8; font-weight: 700; cursor: pointer; white-space: normal; }
   .rules-button:hover, .rules-button:focus, .dialog-rules-button:hover, .dialog-rules-button:focus { background: #174d82; }
   .rules-button.rules-button-pdf { color: #b30b00; border-color: #b30b00; background: #fff; }
@@ -521,7 +521,8 @@ DOCTYPE html>
         <div><strong>Your Plays:</strong> <span id="dialogYourPlays"></span></div>
       </div>
       <div class="game-dialog-actions">
-        <button class="dialog-rules-button" type="button" id="dialogRulesButton">Quick Rules</button>
+        <button class="dialog-rules-button" type="button" id="dialogRulesButton">Brief Overview</button>
+        <button class="dialog-rules-button" type="button" id="dialogPdfButton" hidden>Quick Rules PDF</button>
         <button class="dialog-rules-button" type="button" id="dialogPromptButton">Generate Rules Prompt</button>
       </div>
     </div>
@@ -530,7 +531,7 @@ DOCTYPE html>
 <dialog id="rulesDialog" aria-labelledby="rulesDialogTitle">
   <div class="rules-dialog-shell">
     <div class="rules-dialog-header">
-      <button class="rules-dialog-close" id="rulesDialogClose" type="button" aria-label="Close quick rules">&times;</button>
+      <button class="rules-dialog-close" id="rulesDialogClose" type="button" aria-label="Close rules overview">&times;</button>
       <h2 id="rulesDialogTitle"></h2>
       <p class="rules-dialog-subtitle" id="rulesDialogSubtitle"></p>
       <div class="rules-color-strip" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
@@ -657,7 +658,8 @@ const COLLECTION_COLUMNS = [
 
 const ADDITIONAL_COLUMNS = [];
 const THUMBNAIL_COLUMN = { header: '', field: 'boardgame.thumbnail' };
-const RULES_COLUMN = { header: 'Quick Rules', type: 'rules' };
+const RULES_COLUMN = { header: 'Rules', type: 'rules' };
+const GOOGLE_SEARCH_COLUMN = { header: 'Google Search', type: 'googleSearch' };
 const QUICK_RULES_FILES = [
   'Acquire_Quick_Reference_Guide-5.pdf',
   'Quacks_of_Quedlinburg_Quick_Reference_Guide-269259.pdf',
@@ -677,6 +679,13 @@ function findQuickRulesFile(game) {
   const suffix = new RegExp(`-${bggId}\\.pdf$`, 'i');
   return QUICK_RULES_FILES.find(filename => suffix.test(filename)) || '';
 }
+
+function openGoogleSearch(query) {
+  const url = new URL('https://www.google.com/search');
+  url.searchParams.set('q', query);
+  window.open(url.toString(), '_blank', 'noopener,noreferrer');
+}
+
 const VALUE3_FIELD = 'boardgame.average';
 const RANK_ID_FIELD = 'boardgames_ranks.id';
 
@@ -762,7 +771,7 @@ function getActiveColumns() {
   const activeColumns = columns.concat(ADDITIONAL_COLUMNS);
   if (activeView !== 'collection') {
     const detailedColumns = thumbnailEnabled ? [THUMBNAIL_COLUMN, ...activeColumns] : activeColumns;
-    return [...detailedColumns, RULES_COLUMN];
+    return [...detailedColumns, RULES_COLUMN, GOOGLE_SEARCH_COLUMN];
   }
   const value3Column = ADDITIONAL_COLUMNS.find(column => column.field === VALUE3_FIELD);
   const averageRatingColumn = value3Column
@@ -772,7 +781,7 @@ function getActiveColumns() {
     ? [COLLECTION_COLUMNS[0], averageRatingColumn, ...COLLECTION_COLUMNS.slice(1)]
     : COLLECTION_COLUMNS;
   const visibleColumns = thumbnailEnabled ? [THUMBNAIL_COLUMN, ...collectionColumns] : collectionColumns;
-  return [...visibleColumns, RULES_COLUMN];
+  return [...visibleColumns, RULES_COLUMN, GOOGLE_SEARCH_COLUMN];
 }
 
 function toNumber(value) {
@@ -1165,6 +1174,8 @@ function buildColGroup(columns = getActiveColumns()) {
     const col = document.createElement('col');
     col.style.width = column.type === 'rules'
       ? '116px'
+      : column.type === 'googleSearch'
+      ? '176px'
       : activeView === 'collection'
       ? (collectionWidths[index] ?? 120) + 'px'
       : '120px';
@@ -1413,6 +1424,9 @@ function getLocalThumbnailUrl(value, gameName = '') {
 
 function openGameDialog(game) {
   selectedGame = game;
+  const hasQuickRulesFile = Boolean(findQuickRulesFile(game));
+  document.getElementById('dialogPdfButton').hidden = !hasQuickRulesFile;
+  document.getElementById('dialogPromptButton').hidden = hasQuickRulesFile;
   const dialog = document.getElementById('gameDialog');
   const cover = document.getElementById('dialogCover');
   const coverUrl = game['boardgame.image'] || getLocalThumbnailUrl(game['boardgame.thumbnail'], game.game_name);
@@ -1522,7 +1536,6 @@ function addSetupVisual(container, game) {
 function openRulesDialog(game) {
   const dialog = document.getElementById('rulesDialog');
   const content = document.getElementById('rulesDialogContent');
-  const quickRulesFile = findQuickRulesFile(game);
   const players = game.min_players !== null && game.max_players !== null
     ? game.min_players === game.max_players ? String(game.min_players) : `${game.min_players}-${game.max_players}`
     : 'See rulebook';
@@ -1530,17 +1543,9 @@ function openRulesDialog(game) {
     ? game.playing_time_min === game.playing_time_max ? `${game.playing_time_min} minutes` : `${game.playing_time_min}-${game.playing_time_max} minutes`
     : 'See rulebook';
 
-  document.getElementById('rulesDialogTitle').textContent = `${game.game_name || 'Game'} \u2014 QUICK REFERENCE GUIDE`;
-  document.getElementById('rulesDialogSubtitle').textContent = quickRulesFile
-    ? 'Local quick-reference guide'
-    : 'Fast setup and gameplay summary. Consult the full rulebook for edge cases.';
+  document.getElementById('rulesDialogTitle').textContent = `${game.game_name || 'Game'} \u2014 BRIEF OVERVIEW`;
+  document.getElementById('rulesDialogSubtitle').textContent = 'Fast setup and gameplay summary. Consult the full rulebook for edge cases.';
   content.innerHTML = '';
-
-  if (quickRulesFile) {
-    const quickRulesUrl = `quickrules/${quickRulesFile}`;
-    window.open(quickRulesUrl, '_blank', 'noopener,noreferrer');
-    return;
-  }
 
   const columns = document.createElement('div');
   columns.className = 'rules-columns';
@@ -1659,6 +1664,10 @@ document.getElementById('dialogClose').addEventListener('click', closeGameDialog
 document.getElementById('rulesDialogClose').addEventListener('click', closeRulesDialog);
 document.getElementById('dialogRulesButton').addEventListener('click', () => {
   if (selectedGame) openRulesDialog(selectedGame);
+});
+document.getElementById('dialogPdfButton').addEventListener('click', () => {
+  const quickRulesFile = selectedGame && findQuickRulesFile(selectedGame);
+  if (quickRulesFile) window.open(`quickrules/${quickRulesFile}`, '_blank', 'noopener,noreferrer');
 });
 
 const RULES_PROMPT_TEMPLATE = `Create a two-page 8.5 x 14 landscape Quick Reference Guide PDF for [GAME NAME], which has a bggid of [BGGID], and use the rules at [Rule URL].
@@ -2122,13 +2131,23 @@ function buildRows(games) {
         td.className = 'rules-cell';
         const button = document.createElement('button');
         const quickRulesFile = findQuickRulesFile(game);
-        button.className = quickRulesFile ? 'rules-button rules-button-pdf' : 'rules-button';
+        button.className = 'rules-button';
         button.type = 'button';
-        button.textContent = quickRulesFile ? 'Quick Rules PDF' : 'Brief Overview';
-        button.setAttribute('aria-label', `Open quick rules for ${game.game_name || 'this game'}`);
+        button.textContent = 'Brief Overview';
+        button.setAttribute('aria-label', `Open rules overview for ${game.game_name || 'this game'}`);
         button.addEventListener('click', () => openRulesDialog(game));
         td.appendChild(button);
-        if (!quickRulesFile) {
+        if (quickRulesFile) {
+          const pdfButton = document.createElement('button');
+          pdfButton.className = 'rules-button rules-button-pdf';
+          pdfButton.type = 'button';
+          pdfButton.textContent = 'Quick Rules PDF';
+          pdfButton.setAttribute('aria-label', `Open quick rules PDF for ${game.game_name || 'this game'}`);
+          pdfButton.addEventListener('click', () => {
+            window.open(`quickrules/${quickRulesFile}`, '_blank', 'noopener,noreferrer');
+          });
+          td.appendChild(pdfButton);
+        } else {
           const promptButton = document.createElement('button');
           promptButton.className = 'rules-button rules-prompt-button';
           promptButton.type = 'button';
@@ -2140,6 +2159,25 @@ function buildRows(games) {
           });
           td.appendChild(promptButton);
         }
+      } else if (col.type === 'googleSearch') {
+        td.className = 'rules-cell';
+        const bggRulesButton = document.createElement('button');
+        bggRulesButton.className = 'rules-button rules-search-button';
+        bggRulesButton.type = 'button';
+        bggRulesButton.textContent = 'Google BGG Rules';
+        bggRulesButton.setAttribute('aria-label', `Search BoardGameGeek rules for ${game.game_name || 'this game'}`);
+        bggRulesButton.addEventListener('click', () => {
+          openGoogleSearch(`Site:boardgamegeek.com (rules OR instructions) "${game.game_name || ''}"`);
+        });
+        const gameSearchButton = document.createElement('button');
+        gameSearchButton.className = 'rules-button rules-search-button';
+        gameSearchButton.type = 'button';
+        gameSearchButton.textContent = 'Google Search Game';
+        gameSearchButton.setAttribute('aria-label', `Search Google for board game ${game.game_name || 'this game'}`);
+        gameSearchButton.addEventListener('click', () => {
+          openGoogleSearch(`board game "${game.game_name || ''}"`);
+        });
+        td.append(bggRulesButton, gameSearchButton);
       } else if (col.field && game[col.field] !== undefined && game[col.field] !== null) {
         const value = game[col.field];
         if (col.field === THUMBNAIL_COLUMN.field) {
@@ -2203,6 +2241,7 @@ function buildRows(games) {
         } else if (activeView === 'collection' && col.field === 'comment') {
           td.classList.add('comment-cell');
           td.textContent = value || '';
+          td.title = value || '';
         } else {
           td.textContent = value;
           if (WRAP_FIELDS.has(col.field)) td.classList.add('wrap');
