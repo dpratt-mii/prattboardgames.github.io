@@ -381,6 +381,29 @@
     box-shadow: 0 3px 8px rgba(0, 0, 0, .25);
   }
   #userLookupMenu .sub-menu[hidden] { display: none; }
+  #rulesPromptContextMenu {
+    position: fixed;
+    z-index: 30;
+    min-width: 160px;
+    padding: 4px;
+    border: 1px solid #aaa;
+    background: #fff;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, .25);
+  }
+  #rulesPromptContextMenu[hidden] { display: none; }
+  #rulesPromptContextMenu button {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 12px;
+    border: 0;
+    color: #111;
+    background: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: left;
+  }
+  #rulesPromptContextMenu button:hover, #rulesPromptContextMenu button:focus { background: #e7edf9; }
   #userLookupDialog {
     width: min(1400px, calc(100vw - 32px));
     max-width: 1400px;
@@ -454,6 +477,9 @@
       <a href="https://rule-book.org/" target="_blank" rel="noopener noreferrer">rule-book.org</a>
     </div>
   </div>
+</div>
+<div id="rulesPromptContextMenu" role="menu" hidden>
+  <button id="rulesPromptContextMenuButton" type="button" role="menuitem">Generate Prompt</button>
 </div>
 <div id="status">Loading data from collection.csv&hellip;</div>
 <div class="table-wrap">
@@ -1011,6 +1037,41 @@ function setupUserLookupMenu() {
   });
 }
 
+let rulesPromptContextGame = null;
+
+function openRulesPromptContextMenu(event, game) {
+  event.preventDefault();
+  rulesPromptContextGame = game;
+  const menu = document.getElementById('rulesPromptContextMenu');
+  menu.hidden = false;
+  menu.style.left = `${Math.max(8, Math.min(event.clientX, window.innerWidth - menu.offsetWidth - 8))}px`;
+  menu.style.top = `${Math.max(8, Math.min(event.clientY, window.innerHeight - menu.offsetHeight - 8))}px`;
+  document.getElementById('rulesPromptContextMenuButton').focus({ preventScroll: true });
+}
+
+function setupRulesPromptContextMenu() {
+  const menu = document.getElementById('rulesPromptContextMenu');
+  const button = document.getElementById('rulesPromptContextMenuButton');
+  const closeMenu = () => {
+    menu.hidden = true;
+    rulesPromptContextGame = null;
+  };
+
+  button.addEventListener('click', () => {
+    const game = rulesPromptContextGame;
+    closeMenu();
+    if (game) openRulesPromptGenerator(game);
+  });
+  document.addEventListener('click', event => {
+    if (!event.target.closest('#rulesPromptContextMenu')) closeMenu();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeMenu();
+  });
+  window.addEventListener('resize', closeMenu);
+  window.addEventListener('scroll', closeMenu, true);
+}
+
 function parseCSV(text) {
   const rows = [];
   let currentRow = [];
@@ -1177,7 +1238,7 @@ function buildColGroup(columns = getActiveColumns()) {
   colGroup.innerHTML = '';
   const frag = document.createDocumentFragment();
   const rulesColumnWidth = getActionColumnWidth(['Brief Overview', 'Quick Rules PDF', 'Generate Prompt'], 'rules-button-pdf');
-  const searchColumnWidth = getActionColumnWidth(['Google BGG Rules', 'Google Game'], 'rules-search-button');
+  const searchColumnWidth = getActionColumnWidth(['Google Rules', 'Google Game'], 'rules-search-button');
   const collectionWidths = new Map([
     [THUMBNAIL_COLUMN.field, 125],
     ['game_name', 225],
@@ -2145,6 +2206,7 @@ document.getElementById('dialogPlayButton').addEventListener('click', () => {
 });
 
 setupUserLookupMenu();
+setupRulesPromptContextMenu();
 
 function buildRows(games) {
   const tbody = document.getElementById('bodyRows');
@@ -2178,23 +2240,14 @@ function buildRows(games) {
           });
           td.appendChild(pdfButton);
         } else {
-          const promptButton = document.createElement('button');
-          promptButton.className = 'rules-button rules-prompt-button';
-          promptButton.type = 'button';
-          promptButton.textContent = 'Generate Prompt';
-          promptButton.setAttribute('aria-label', `Generate quick reference prompt for ${game.game_name || 'this game'}`);
-          promptButton.addEventListener('click', event => {
-            event.stopPropagation();
-            openRulesPromptGenerator(game);
-          });
-          td.appendChild(promptButton);
+          td.addEventListener('contextmenu', event => openRulesPromptContextMenu(event, game));
         }
       } else if (col.type === 'googleSearch') {
         td.className = 'rules-cell';
         const bggRulesButton = document.createElement('button');
         bggRulesButton.className = 'rules-button rules-search-button';
         bggRulesButton.type = 'button';
-        bggRulesButton.textContent = 'Google BGG Rules';
+        bggRulesButton.textContent = 'Google Rules';
         bggRulesButton.setAttribute('aria-label', `Search BoardGameGeek rules for ${game.game_name || 'this game'}`);
         bggRulesButton.addEventListener('click', () => {
           openGoogleSearch(`Site:boardgamegeek.com (rules OR instructions) "${game.game_name || ''}"`);
