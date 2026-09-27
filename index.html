@@ -85,12 +85,12 @@
   .summary-card-title { font-size: 14px; font-weight: 800; color: #5b6b85; letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .summary-card-count { font-size: 14px; font-weight: 800; color: #111; line-height: 1; white-space: nowrap; }
   .summary-card-visible { font-size: 13px; font-weight: 600; color: #444; white-space: nowrap; }
-  .table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; margin: 0 0 16px 16px; border: 1px solid #ccc; border-right: none; scrollbar-width: auto; scrollbar-color: #9099a6 #e5e7eb; }
+  .table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; margin: 0 0 0 0; border: 1px solid #ccc; border-right: none; scrollbar-width: auto; scrollbar-color: #9099a6 #e5e7eb; }
   .table-wrap::-webkit-scrollbar { width: 18px; height: 18px; }
   .table-wrap::-webkit-scrollbar-track { background: #e5e7eb; }
   .table-wrap::-webkit-scrollbar-thumb { background: #9099a6; border: 3px solid #e5e7eb; border-radius: 9px; }
   .table-wrap::-webkit-scrollbar-thumb:hover { background: #75808f; }
-  body.collection-view .table-wrap { margin: 0 0 16px 30px; border: 0; }
+  body.collection-view .table-wrap { margin: 0 0 0 0; border: 0; }
   table { border-collapse: collapse; font-size: 12px; white-space: nowrap; table-layout: fixed; }
   th, td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; overflow: hidden; text-overflow: ellipsis; }
   thead th { position: sticky; top: 0; background: #2b2f38; color: #fff; z-index: 2; }
@@ -155,21 +155,6 @@
   #filterRow input { width: 100%; box-sizing: border-box; font-size: 12px; padding: 2px 4px; }
   body.collection-view #filterRow { display: none; }
   body.collection-view .view-collection-table { table-layout: fixed; }
-  body.collection-view:not(.thumbnail-view) .view-collection-table col:nth-child(1) { width: 225px !important; }
-  body.collection-view:not(.thumbnail-view) .view-collection-table col:nth-child(2) { width: 102px !important; }
-  body.collection-view:not(.thumbnail-view) .view-collection-table col:nth-child(3) { width: 94px !important; }
-  body.collection-view:not(.thumbnail-view) .view-collection-table col:nth-child(4) { width: 190px !important; }
-  body.collection-view:not(.thumbnail-view) .view-collection-table col:nth-child(5) { width: 180px !important; }
-  body.collection-view:not(.thumbnail-view) .view-collection-table col:nth-child(6) { width: 96px !important; }
-  body.collection-view:not(.thumbnail-view) .view-collection-table col:nth-child(7) { width: 96px !important; }
-  body.collection-view.thumbnail-view .view-collection-table col:nth-child(1) { width: 125px !important; }
-  body.collection-view.thumbnail-view .view-collection-table col:nth-child(2) { width: 225px !important; }
-  body.collection-view.thumbnail-view .view-collection-table col:nth-child(3) { width: 102px !important; }
-  body.collection-view.thumbnail-view .view-collection-table col:nth-child(4) { width: 94px !important; }
-  body.collection-view.thumbnail-view .view-collection-table col:nth-child(5) { width: 180px !important; }
-  body.collection-view.thumbnail-view .view-collection-table col:nth-child(6) { width: 190px !important; }
-  body.collection-view.thumbnail-view .view-collection-table col:nth-child(7) { width: 96px !important; }
-  body.collection-view.thumbnail-view .view-collection-table col:nth-child(8) { width: 96px !important; }
   .thumbnail-cell { padding: 8px !important; text-align: center; vertical-align: middle !important; }
   .collection-thumbnail { display: block; width: 100px; height: 120px; margin: 0 auto; object-fit: cover; }
   #gameDialog {
@@ -1178,23 +1163,26 @@ function buildColGroup(columns = getActiveColumns()) {
   const frag = document.createDocumentFragment();
   const rulesColumnWidth = getActionColumnWidth(['Brief Overview', 'Quick Rules PDF', 'Generate Prompt'], 'rules-button-pdf');
   const searchColumnWidth = getActionColumnWidth(['Google BGG Rules', 'Google Search Game'], 'rules-search-button');
-  const collectionWidths = activeView === 'collection'
-    ? thumbnailEnabled
-      ? [125, 225, 102, 47, 190, 190, 96, 96, 390]
-      : [225, 102, 47, 190, 190, 96, 96, 390]
-    : thumbnailEnabled ? [125] : [];
-  columns.forEach((column, index) => {
+  const collectionWidths = new Map([
+    [THUMBNAIL_COLUMN.field, 125],
+    ['game_name', 225],
+    ['bgg_rating', 102],
+    [VALUE3_FIELD, 102],
+    ['in_collection', 33],
+    ['min_players', 190],
+    ['max_players', 190],
+    ['comment', 96]
+  ]);
+  columns.forEach(column => {
     const col = document.createElement('col');
-    col.style.width = activeView === 'collection' && column.field === 'in_collection'
-      ? '47px'
-      : column.field === 'min_players' || column.field === 'max_players'
-      ? '190px'
-      : column.type === 'rules'
+    col.style.width = column.type === 'rules'
       ? rulesColumnWidth
       : column.type === 'googleSearch'
       ? searchColumnWidth
       : activeView === 'collection'
-      ? (collectionWidths[index] ?? 120) + 'px'
+      ? (collectionWidths.get(column.field) ?? 120) + 'px'
+      : activeView !== 'collection' && column.field === THUMBNAIL_COLUMN.field && thumbnailEnabled
+      ? '125px'
       : '120px';
     frag.appendChild(col);
   });
