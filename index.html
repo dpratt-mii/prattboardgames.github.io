@@ -29,7 +29,7 @@
     text-align: right;
   }
   .view-collection-table thead th {
-    background: #fff;
+    background: #e7edf9;
     color: #075bbb;
     border-color: #cfd4da;
     font-size: 18px;
@@ -72,7 +72,7 @@
   .view-collection-table tbody td.status-cell.prev-owned { color: #14149b; }
   .view-collection-table tbody td.comment-cell {
     white-space: nowrap;
-    min-width: 360px;
+    min-width: 0;
     font-size: 18px;
     line-height: 1.3;
   }
@@ -93,7 +93,7 @@
   body.collection-view .table-wrap { margin: 0 0 0 0; border: 0; }
   table { border-collapse: collapse; font-size: 12px; white-space: nowrap; table-layout: fixed; }
   th, td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; overflow: hidden; text-overflow: ellipsis; }
-  thead th { position: sticky; top: 0; background: #2b2f38; color: #fff; z-index: 2; }
+  thead th { position: sticky; top: 0; background: #e7edf9; color: #222; z-index: 2; }
   body:not(.collection-view) thead th { white-space: normal; word-break: break-word; }
   tbody tr:nth-child(even) { background: #fafafa; }
   tbody tr:hover { background: #eef6ff; }
@@ -644,23 +644,35 @@ const THUMBNAIL_COLUMN = { header: '', field: 'boardgame.thumbnail' };
 const RULES_COLUMN = { header: 'Rules', type: 'rules' };
 const GOOGLE_SEARCH_COLUMN = { header: 'Search', type: 'googleSearch' };
 const QUICK_RULES_FILES = [
-  'Acquire_Quick_Reference_Guide-5.pdf',
-  'Quacks_of_Quedlinburg_Quick_Reference_Guide-269259.pdf',
-  '7_Wonders_Duel_Quick_Reference_Guide-173346.pdf',
-  'My_City_Quick_Reference_Guide-295486.pdf',
-  '7_Wonders_Quick_Reference_Guide-68448.pdf',
-  'Adventure_Games_Monochrome_Inc_Quick_Reference_Guide-267814.pdf',
-  'Sagrada_Quick_Reference_Guide-199561.pdf',
-  'Adventure_Land_Quick_Reference_Guide-183231.pdf',
-  'Wingspan_Quick_Reference_Guide-266192.pdf',
-  'Above_and_Below_Quick_Reference_Guide-172818.pdf'
+  '7_Wonders_Duel_Quick_Reference_Guide(173346).pdf',
+  '7_Wonders_Quick_Reference_Guide(68448).pdf',
+  '7_Wonders_Quick_Rules_2_Page(68448).pdf',
+  'Above_and_Below_Quick_Reference_Guide(172818).pdf',
+  'Acquire_Quick_Reference_Guide(5).pdf',
+  'Adventure_Games_Monochrome_Inc_Quick_Reference_Guide(267814).pdf',
+  'Adventure_Land_Quick_Reference_Guide-(183231).pdf',
+  'Agricola All Creatures Big and Small (119890).pdf',
+  'Alhambra (6249).pdf',
+  'Ancestree (229240).pdf',
+  'Flashback Lucy (408308).pdf',
+  'Kites (348096) 5.pdf',
+  'March of the Ants (156496).pdf',
+  'Mountains out of Molehills (354395) 1.pdf',
+  'My_City_Quick_Reference_Guide(295486).pdf',
+  'Quacks_of_Quedlinburg_Quick_Reference_Guide(269259).pdf',
+  'Sagrada_Quick_Reference_Guide(199561).pdf',
+  'Termite Towers (338117) 1.pdf',
+  'The Alpha (307832).pdf',
+  'The Ancient World (259298).pdf',
+  'The Village Crone (175592).pdf',
+  'Tsuro of the Seas (124172) 1.pdf',
+  'Wingspan_Quick_Reference_Guide(266192).pdf'
 ];
 
 function findQuickRulesFile(game) {
   const bggId = String(game['boardgame.bg_id'] || game.objectid || '').trim();
   if (!bggId) return '';
-  const suffix = new RegExp(`-${bggId}\\.pdf$`, 'i');
-  return QUICK_RULES_FILES.find(filename => suffix.test(filename)) || '';
+  return QUICK_RULES_FILES.find(filename => filename.includes(`(${bggId})`)) || '';
 }
 
 function openGoogleSearch(query) {
@@ -1168,10 +1180,10 @@ function buildColGroup(columns = getActiveColumns()) {
     ['game_name', 225],
     ['bgg_rating', 102],
     [VALUE3_FIELD, 102],
-    ['in_collection', 40],
-    ['min_players', 60],
-    ['max_players', 60],
-    ['comment', 96]
+    ['in_collection', 140],
+    ['min_players', 85],
+    ['max_players', 85],
+    ['comment', 140]
   ]);
   columns.forEach(column => {
     const col = document.createElement('col');
