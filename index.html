@@ -1449,11 +1449,21 @@ function openGameDialog(game) {
   document.getElementById('dialogPromptButton').hidden = hasQuickRulesFile;
   const dialog = document.getElementById('gameDialog');
   const cover = document.getElementById('dialogCover');
-  const coverUrl = game['boardgame.image'] || getLocalThumbnailUrl(game['boardgame.thumbnail'], game.game_name);
+  const remoteCoverUrl = game['boardgame.image'];
+  const localCoverUrl = getLocalThumbnailUrl(game['boardgame.thumbnail'], game.game_name);
+  const coverUrl = remoteCoverUrl || localCoverUrl;
   cover.hidden = !coverUrl;
-  cover.src = coverUrl || '';
   cover.alt = game.game_name ? game.game_name + ' cover' : '';
-  cover.onerror = () => { cover.hidden = true; };
+  let triedLocalCover = false;
+  cover.onerror = () => {
+    if (!triedLocalCover && remoteCoverUrl && localCoverUrl) {
+      triedLocalCover = true;
+      cover.src = localCoverUrl;
+      return;
+    }
+    cover.hidden = true;
+  };
+  cover.src = coverUrl || '';
 
   setDialogText('dialogGameTitle', game.game_name, 'Untitled game');
   setDialogText('dialogBggId', game.bgg_id ? `BGG ID: ${game.bgg_id}` : '', '');
