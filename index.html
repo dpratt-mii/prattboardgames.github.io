@@ -1426,6 +1426,24 @@ function formatTableRating(value) {
   return Number.isFinite(number) ? number.toFixed(2) : 'N/A';
 }
 
+function getAverageRatingColor(value) {
+  const rating = Number(value);
+  if (!Number.isFinite(rating) || rating < 1) return '';
+
+  const stops = [
+    [1, [244, 190, 190]],
+    [5, [255, 244, 190]],
+    [10, [190, 226, 198]]
+  ];
+  const clampedRating = Math.min(rating, 10);
+  const lowerStop = clampedRating < 5 ? stops[0] : stops[1];
+  const upperStop = clampedRating < 5 ? stops[1] : stops[2];
+  const progress = (clampedRating - lowerStop[0]) / (upperStop[0] - lowerStop[0]);
+  const channels = lowerStop[1].map((channel, index) =>
+    Math.round(channel + (upperStop[1][index] - channel) * progress));
+  return `rgb(${channels.join(', ')})`;
+}
+
 function getBoardGameUrl(id, title) {
   const slug = String(title || '')
     .trim()
@@ -2309,7 +2327,9 @@ function buildRows(games) {
           td.textContent = value === null ? 'N/A' : value;
         } else if (activeView === 'collection' && col.field === VALUE3_FIELD) {
           td.classList.add('rating-cell');
+          td.classList.add('average-rating-cell');
           td.textContent = formatTableRating(value);
+          td.style.backgroundColor = getAverageRatingColor(value);
         } else if (activeView === 'collection' && col.field === 'status') {
           td.classList.add('status-cell');
           if (value === 'Owned') td.classList.add('owned');
