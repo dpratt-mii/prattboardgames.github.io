@@ -52,7 +52,7 @@
   .view-collection-table tbody tr:nth-child(even) td { background: #fff; }
   .view-collection-table tbody td.title-cell {
     color: #075bbb;
-    font-size: 21px;
+    font-size: 19px;
     line-height: 1.2;
     font-weight: 500;
     white-space: normal;
@@ -1162,15 +1162,15 @@ function buildColGroup(columns = getActiveColumns()) {
   colGroup.innerHTML = '';
   const frag = document.createDocumentFragment();
   const rulesColumnWidth = getActionColumnWidth(['Brief Overview', 'Quick Rules PDF', 'Generate Prompt'], 'rules-button-pdf');
-  const searchColumnWidth = getActionColumnWidth(['Google BGG Rules', 'Google Search Game'], 'rules-search-button');
+  const searchColumnWidth = getActionColumnWidth(['Google BGG Rules', 'Google Game'], 'rules-search-button');
   const collectionWidths = new Map([
     [THUMBNAIL_COLUMN.field, 125],
     ['game_name', 225],
     ['bgg_rating', 102],
     [VALUE3_FIELD, 102],
-    ['in_collection', 33],
-    ['min_players', 190],
-    ['max_players', 190],
+    ['in_collection', 40],
+    ['min_players', 60],
+    ['max_players', 60],
     ['comment', 96]
   ]);
   columns.forEach(column => {
@@ -2177,7 +2177,7 @@ function buildRows(games) {
         const gameSearchButton = document.createElement('button');
         gameSearchButton.className = 'rules-button rules-search-button';
         gameSearchButton.type = 'button';
-        gameSearchButton.textContent = 'Google Search Game';
+        gameSearchButton.textContent = 'Google Game';
         gameSearchButton.setAttribute('aria-label', `Search Google for board game ${game.game_name || 'this game'}`);
         gameSearchButton.addEventListener('click', () => {
           openGoogleSearch(`board game "${game.game_name || ''}"`);
