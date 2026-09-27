@@ -296,8 +296,8 @@
   .prompt-status.error { color: #b00020; }
   #promptOutput { width: 100%; min-height: 220px; box-sizing: border-box; padding: 10px; border: 1px solid #aab4bf; border-radius: 4px; font: 13px/1.4 Consolas, monospace; resize: vertical; }
   .rules-cell { text-align: center !important; vertical-align: middle !important; }
-  .rules-prompt-button, .rules-button-pdf, .rules-search-button { display: block; margin: 6px auto 0; }
-  .rules-button { padding: 7px 10px; border: 1px solid #2867a8; border-radius: 4px; color: #fff; background: #2867a8; font-weight: 700; cursor: pointer; white-space: normal; }
+  .rules-prompt-button, .rules-button-pdf, .rules-search-button { display: block; width: max-content; margin: 6px auto 0; }
+  .rules-button { padding: 7px 10px; border: 1px solid #2867a8; border-radius: 4px; color: #fff; background: #2867a8; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .rules-button:hover, .rules-button:focus, .dialog-rules-button:hover, .dialog-rules-button:focus { background: #174d82; }
   .rules-button.rules-button-pdf { color: #b30b00; border-color: #b30b00; background: #fff; }
   .rules-button.rules-button-pdf:hover, .rules-button.rules-button-pdf:focus { background: #ffece9; }
@@ -659,7 +659,7 @@ const COLLECTION_COLUMNS = [
 const ADDITIONAL_COLUMNS = [];
 const THUMBNAIL_COLUMN = { header: '', field: 'boardgame.thumbnail' };
 const RULES_COLUMN = { header: 'Rules', type: 'rules' };
-const GOOGLE_SEARCH_COLUMN = { header: 'Google Search', type: 'googleSearch' };
+const GOOGLE_SEARCH_COLUMN = { header: 'Search', type: 'googleSearch' };
 const QUICK_RULES_FILES = [
   'Acquire_Quick_Reference_Guide-5.pdf',
   'Quacks_of_Quedlinburg_Quick_Reference_Guide-269259.pdf',
@@ -1161,21 +1161,36 @@ function addJoinedColumns(collectionRows, sourceRows, sourceName, sourceKey) {
   });
 }
 
+function getActionColumnWidth(labels, extraClass) {
+  const button = document.createElement('button');
+  button.className = `rules-button ${extraClass}`;
+  button.style.cssText = 'position:absolute;visibility:hidden;width:max-content;white-space:nowrap;';
+  document.body.appendChild(button);
+  const width = Math.max(...labels.map(label => {
+    button.textContent = label;
+    return button.getBoundingClientRect().width;
+  }));
+  button.remove();
+  return `${Math.ceil(width + 18)}px`;
+}
+
 function buildColGroup(columns = getActiveColumns()) {
   const colGroup = document.getElementById('colGroup');
   colGroup.innerHTML = '';
   const frag = document.createDocumentFragment();
+  const rulesColumnWidth = getActionColumnWidth(['Brief Overview', 'Quick Rules PDF', 'Generate Prompt'], 'rules-button-pdf');
+  const searchColumnWidth = getActionColumnWidth(['Google BGG Rules', 'Google Search Game'], 'rules-search-button');
   const collectionWidths = activeView === 'collection'
     ? thumbnailEnabled
-      ? [125, 225, 102, 94, 180, 190, 96, 96, 390]
-      : [225, 102, 94, 180, 190, 96, 96, 390]
+      ? [125, 225, 102, 47, 190, 190, 96, 96, 390]
+      : [225, 102, 47, 190, 190, 96, 96, 390]
     : thumbnailEnabled ? [125] : [];
   columns.forEach((column, index) => {
     const col = document.createElement('col');
     col.style.width = column.type === 'rules'
-      ? '116px'
+      ? rulesColumnWidth
       : column.type === 'googleSearch'
-      ? '176px'
+      ? searchColumnWidth
       : activeView === 'collection'
       ? (collectionWidths[index] ?? 120) + 'px'
       : '120px';
