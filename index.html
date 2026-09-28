@@ -91,6 +91,36 @@
   .table-wrap::-webkit-scrollbar-thumb { background: #9099a6; border: 3px solid #e5e7eb; border-radius: 9px; }
   .table-wrap::-webkit-scrollbar-thumb:hover { background: #75808f; }
   body.collection-view .table-wrap { margin: 0 0 0 0; border: 0; }
+  .main-layout { flex: 1 1 auto; min-height: 0; display: flex; }
+  .main-layout .table-wrap { min-width: 0; }
+  .sidebar { flex: 0 0 220px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; padding: 12px; overflow-y: auto; background: #f7f8fb; border-right: 1px solid #d7dde6; font-size: 13px; }
+  .main-layout.sidebar-collapsed .sidebar { display: none; }
+  .sidebar-rail { flex: 0 0 28px; display: flex; flex-direction: column; align-items: center; padding: 6px 0; background: #e7edf9; border-right: 1px solid #d7dde6; }
+  .sidebar-toggle { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; padding: 6px 0; border: 0; color: #2867a8; background: transparent; cursor: pointer; font-weight: 800; }
+  .sidebar-toggle:hover, .sidebar-toggle:focus-visible { background: #d5e5f8; }
+  .sidebar-toggle-icon { font-size: 16px; line-height: 1; }
+  .sidebar-toggle-label { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 12px; letter-spacing: .08em; }
+  .sidebar-search { width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid #c6d3ec; border-radius: 4px; font-size: 14px; }
+  .sidebar-section h2 { margin: 0 0 6px; color: #5b6b85; font-size: 12px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+  .sidebar-section-header { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
+  .sidebar-section-header h2 { margin: 0; }
+  .sidebar-range-value { color: #2867a8; font-size: 12px; font-weight: 800; white-space: nowrap; }
+  .sidebar-slider { display: flex; align-items: center; gap: 8px; color: #444; font-size: 12px; }
+  .sidebar-slider span { flex: 0 0 28px; }
+  .sidebar-slider input { flex: 1 1 auto; min-width: 0; margin: 4px 0; accent-color: #2867a8; cursor: pointer; }
+  .sidebar-slider-single { width: 100%; margin: 4px 0; accent-color: #2867a8; cursor: pointer; }
+  .sidebar-options { display: flex; flex-wrap: wrap; gap: 4px; }
+  .sidebar-option { padding: 5px 8px; border: 1px solid #c6d3ec; border-radius: 4px; color: #17324b; background: #fff; cursor: pointer; font-size: 13px; }
+  .sidebar-option:hover, .sidebar-option:focus { border-color: #75a7df; }
+  .sidebar-option.active { color: #fff; background: #2867a8; border-color: #2867a8; }
+  .sidebar-card { padding: 8px 10px; background: #e7edf9; border: 1px solid #c6d3ec; border-radius: 6px; }
+  .sidebar-card-title { color: #5b6b85; font-size: 12px; font-weight: 800; letter-spacing: .03em; }
+  .sidebar-card-value { margin-top: 2px; color: #111; font-size: 20px; font-weight: 800; }
+  .sidebar-card-note { color: #444; font-size: 12px; }
+  .alpha-nav { flex: 0 0 26px; display: flex; flex-direction: column; justify-content: space-between; padding: 6px 0; overflow-y: auto; background: #f7f8fb; border-left: 1px solid #d7dde6; }
+  .alpha-nav a { display: block; padding: 1px 0; color: #075bbb; font-size: 12px; font-weight: 700; text-align: center; text-decoration: none; }
+  .alpha-nav a:hover, .alpha-nav a:focus { background: #e7edf9; }
+  .alpha-nav a.disabled { color: #b0b8c4; pointer-events: none; }
   table { border-collapse: collapse; font-size: 12px; white-space: nowrap; table-layout: fixed; }
   th, td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; overflow: hidden; text-overflow: ellipsis; }
   thead th { position: sticky; top: 0; background: #e7edf9; color: #222; z-index: 2; }
@@ -482,15 +512,55 @@
   <button id="rulesPromptContextMenuButton" type="button" role="menuitem">Generate Prompt</button>
 </div>
 <div id="status">Loading data from collection.csv&hellip;</div>
-<div class="table-wrap">
-  <table id="gameTable">
-    <colgroup id="colGroup"></colgroup>
-    <thead>
-      <tr id="headerRow"></tr>
-      <tr id="filterRow"></tr>
-    </thead>
-    <tbody id="bodyRows"></tbody>
-  </table>
+<div class="main-layout" id="mainLayout">
+  <div class="sidebar-rail">
+    <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-controls="filterSidebar" aria-expanded="true" aria-label="Collapse filters">
+      <span class="sidebar-toggle-icon" id="sidebarToggleIcon" aria-hidden="true">&laquo;</span>
+      <span class="sidebar-toggle-label" aria-hidden="true">FILTERS</span>
+    </button>
+  </div>
+  <aside class="sidebar" id="filterSidebar" aria-label="Filters">
+    <input id="sidebarSearch" class="sidebar-search" type="search" placeholder="Search titles…" aria-label="Search titles">
+    <section class="sidebar-section">
+      <h2>Players</h2>
+      <div class="sidebar-options" id="playersOptions"></div>
+    </section>
+    <section class="sidebar-section">
+      <div class="sidebar-section-header"><h2>Play Time</h2><span class="sidebar-range-value" id="playTimeValue">0m – 10h+</span></div>
+      <label class="sidebar-slider"><span>from</span><input type="range" id="playTimeFrom" aria-label="Minimum play time"></label>
+      <label class="sidebar-slider"><span>to</span><input type="range" id="playTimeTo" aria-label="Maximum play time"></label>
+    </section>
+    <div class="sidebar-card">
+      <div class="sidebar-card-title">AVG WEIGHT</div>
+      <div class="sidebar-card-value" id="avgWeightValue">–</div>
+      <div class="sidebar-card-note" id="avgWeightNote"></div>
+    </div>
+    <section class="sidebar-section">
+      <div class="sidebar-section-header"><h2>Complexity</h2><span class="sidebar-range-value" id="complexityValue">1.0 – 5.0</span></div>
+      <label class="sidebar-slider"><span>from</span><input type="range" id="complexityFrom" aria-label="Minimum complexity"></label>
+      <label class="sidebar-slider"><span>to</span><input type="range" id="complexityTo" aria-label="Maximum complexity"></label>
+    </section>
+    <div class="sidebar-card">
+      <div class="sidebar-card-title">AVG RATING</div>
+      <div class="sidebar-card-value" id="avgRatingValue">–</div>
+      <div class="sidebar-card-note" id="avgRatingNote"></div>
+    </div>
+    <section class="sidebar-section">
+      <div class="sidebar-section-header"><h2>Min Avg Rating</h2><span class="sidebar-range-value" id="ratingValue">any</span></div>
+      <input class="sidebar-slider-single" type="range" id="ratingMin" min="0" max="10" step="0.1" value="0" aria-label="Minimum average rating" aria-valuetext="any">
+    </section>
+  </aside>
+  <div class="table-wrap">
+    <table id="gameTable">
+      <colgroup id="colGroup"></colgroup>
+      <thead>
+        <tr id="headerRow"></tr>
+        <tr id="filterRow"></tr>
+      </thead>
+      <tbody id="bodyRows"></tbody>
+    </table>
+  </div>
+  <nav class="alpha-nav" id="alphaNav" aria-label="Jump to letter"></nav>
 </div>
 <dialog id="gameDialog" aria-labelledby="dialogGameTitle">
   <div class="game-dialog-shell">
@@ -787,6 +857,197 @@ function updateSummaryCards(visibleGames) {
     const active = selectedCollectionValues?.size === 1 && selectedCollectionValues.has(flag);
     card.classList.toggle('active', active);
     card.setAttribute('aria-pressed', String(active));
+  });
+}
+
+function getPositiveNumber(value) {
+  const number = Number(value);
+  return value !== null && value !== '' && Number.isFinite(number) && number > 0 ? number : null;
+}
+
+const getPlayTime = game => getPositiveNumber(game.playing_time_max) ?? getPositiveNumber(game.playing_time_min);
+const getWeight = game => getPositiveNumber(game.weight);
+const getAverageRating = game => getPositiveNumber(game[VALUE3_FIELD]);
+
+const PLAY_TIME_STOPS = [0, 15, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 480, 600];
+
+function formatMinutes(minutes) {
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours}h${String(rest).padStart(2, '0')}` : `${hours}h`;
+}
+
+const SIDEBAR_FILTER_GROUPS = [
+  {
+    key: 'players',
+    containerId: 'playersOptions',
+    options: [
+      ...[1, 2, 3, 4, 5, 6].map(count => ({
+        label: String(count),
+        test: game => game.min_players !== null && game.max_players !== null
+          && game.min_players <= count && game.max_players >= count
+      })),
+      { label: '7+', test: game => game.max_players !== null && game.max_players >= 7 }
+    ]
+  }
+];
+// Play time slides over stop indexes; the top stop means no upper limit.
+const SIDEBAR_RANGE_SLIDERS = [
+  {
+    key: 'playTime',
+    fromId: 'playTimeFrom',
+    toId: 'playTimeTo',
+    valueId: 'playTimeValue',
+    min: 0,
+    max: PLAY_TIME_STOPS.length - 1,
+    step: 1,
+    openEnded: true,
+    toValue: position => PLAY_TIME_STOPS[position],
+    valueText: position => `${formatMinutes(PLAY_TIME_STOPS[position])}${position === PLAY_TIME_STOPS.length - 1 ? '+' : ''}`,
+    getValue: getPlayTime
+  },
+  {
+    key: 'complexity',
+    fromId: 'complexityFrom',
+    toId: 'complexityTo',
+    valueId: 'complexityValue',
+    min: 1,
+    max: 5,
+    step: 0.1,
+    openEnded: false,
+    toValue: position => position,
+    valueText: position => position.toFixed(1),
+    getValue: getWeight
+  }
+];
+const sidebarState = {
+  title: '',
+  players: null,
+  ranges: Object.fromEntries(SIDEBAR_RANGE_SLIDERS.map(slider => [slider.key, [slider.min, slider.max]])),
+  minRating: 0
+};
+
+function matchesSidebarFilters(game) {
+  if (sidebarState.title && !String(game.game_name || '').toLowerCase().includes(sidebarState.title)) return false;
+  const groupsMatch = SIDEBAR_FILTER_GROUPS.every(group => {
+    const index = sidebarState[group.key];
+    return index === null || group.options[index].test(game);
+  });
+  if (!groupsMatch) return false;
+  const rangesMatch = SIDEBAR_RANGE_SLIDERS.every(slider => {
+    const [fromPosition, toPosition] = sidebarState.ranges[slider.key];
+    if (fromPosition === slider.min && toPosition === slider.max) return true;
+    const value = slider.getValue(game);
+    if (value === null) return false;
+    const upper = slider.openEnded && toPosition === slider.max ? Infinity : slider.toValue(toPosition);
+    return value >= slider.toValue(fromPosition) && value <= upper;
+  });
+  if (!rangesMatch) return false;
+  return sidebarState.minRating === 0 || (getAverageRating(game) ?? 0) >= sidebarState.minRating;
+}
+
+function setupSidebarRail() {
+  const layout = document.getElementById('mainLayout');
+  const toggle = document.getElementById('sidebarToggle');
+  const storageKey = 'ourbgg.sidebarCollapsed';
+  const setCollapsed = collapsed => {
+    layout.classList.toggle('sidebar-collapsed', collapsed);
+    toggle.setAttribute('aria-expanded', String(!collapsed));
+    toggle.setAttribute('aria-label', collapsed ? 'Expand filters' : 'Collapse filters');
+    document.getElementById('sidebarToggleIcon').innerHTML = collapsed ? '&raquo;' : '&laquo;';
+    try {
+      localStorage.setItem(storageKey, String(collapsed));
+    } catch {
+      // Storage can be unavailable (e.g. privacy mode); the toggle still works for this visit.
+    }
+  };
+  let initiallyCollapsed = false;
+  try {
+    initiallyCollapsed = localStorage.getItem(storageKey) === 'true';
+  } catch {
+    // Fall back to the expanded default.
+  }
+  setCollapsed(initiallyCollapsed);
+  toggle.addEventListener('click', () => setCollapsed(!layout.classList.contains('sidebar-collapsed')));
+}
+
+function buildSidebar() {
+  document.getElementById('sidebarSearch').addEventListener('input', event => {
+    sidebarState.title = event.target.value.trim().toLowerCase();
+    render();
+  });
+  SIDEBAR_FILTER_GROUPS.forEach(group => {
+    const container = document.getElementById(group.containerId);
+    container.innerHTML = '';
+    const buttons = group.options.map((option, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'sidebar-option';
+      button.textContent = option.label;
+      button.setAttribute('aria-pressed', 'false');
+      button.addEventListener('click', () => {
+        sidebarState[group.key] = sidebarState[group.key] === index ? null : index;
+        buttons.forEach((other, otherIndex) => {
+          const active = sidebarState[group.key] === otherIndex;
+          other.classList.toggle('active', active);
+          other.setAttribute('aria-pressed', String(active));
+        });
+        render();
+      });
+      container.appendChild(button);
+      return button;
+    });
+  });
+  SIDEBAR_RANGE_SLIDERS.forEach(slider => {
+    const fromInput = document.getElementById(slider.fromId);
+    const toInput = document.getElementById(slider.toId);
+    const showValues = (from, to) => {
+      fromInput.setAttribute('aria-valuetext', slider.valueText(from));
+      toInput.setAttribute('aria-valuetext', slider.valueText(to));
+      document.getElementById(slider.valueId).textContent = `${slider.valueText(from)} – ${slider.valueText(to)}`;
+    };
+    [fromInput, toInput].forEach(input => {
+      input.min = slider.min;
+      input.max = slider.max;
+      input.step = slider.step;
+      input.addEventListener('input', () => {
+        let from = Number(fromInput.value);
+        let to = Number(toInput.value);
+        if (from > to) {
+          if (input === fromInput) from = to;
+          else to = from;
+          fromInput.value = from;
+          toInput.value = to;
+        }
+        sidebarState.ranges[slider.key] = [from, to];
+        showValues(from, to);
+        render();
+      });
+    });
+    fromInput.value = slider.min;
+    toInput.value = slider.max;
+    showValues(slider.min, slider.max);
+  });
+  const ratingInput = document.getElementById('ratingMin');
+  ratingInput.addEventListener('input', () => {
+    sidebarState.minRating = Number(ratingInput.value);
+    const label = sidebarState.minRating === 0 ? 'any' : `${sidebarState.minRating.toFixed(1)}+`;
+    document.getElementById('ratingValue').textContent = label;
+    ratingInput.setAttribute('aria-valuetext', label);
+    render();
+  });
+}
+
+function updateSidebarCards(statusGames) {
+  [
+    ['avgWeightValue', 'avgWeightNote', getWeight, ' / 5'],
+    ['avgRatingValue', 'avgRatingNote', getAverageRating, '']
+  ].forEach(([valueId, noteId, getValue, suffix]) => {
+    const values = statusGames.map(getValue).filter(value => value !== null);
+    const average = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+    document.getElementById(valueId).textContent = average === null ? '–' : average.toFixed(2) + suffix;
+    document.getElementById(noteId).textContent = `${values.length} of ${statusGames.length} games rated`;
   });
 }
 
@@ -1341,7 +1602,9 @@ function sortByColumn(colIndex) {
 
 function render() {
   const columns = getActiveColumns();
-  let games = allGames.filter(game => {
+  const statusGames = allGames.filter(game => selectedCollectionValues === null
+    || game.in_collection.some(value => selectedCollectionValues.has(value)));
+  let games = statusGames.filter(game => {
     return Object.entries(filters).every(([colIndex, value]) => {
       if (!value) return true;
       const field = columns[Number(colIndex)]?.field;
@@ -1350,8 +1613,8 @@ function render() {
       return cell !== null && cell !== undefined && String(cell).toLowerCase().includes(value);
     });
   })
-    .filter(game => selectedCollectionValues === null
-      || game.in_collection.some(value => selectedCollectionValues.has(value)));
+    .filter(matchesSidebarFilters);
+  updateSidebarCards(statusGames);
 
   if (sortState.colIndex !== null && columns[sortState.colIndex]) {
     const col = columns[sortState.colIndex];
@@ -1367,7 +1630,47 @@ function render() {
 
   document.getElementById('bodyRows').innerHTML = '';
   buildRows(games);
+  updateAlphaAnchors();
   updateSummaryCards(games);
+}
+
+const ALPHABET = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
+function buildAlphaNav() {
+  const nav = document.getElementById('alphaNav');
+  nav.innerHTML = '';
+  ALPHABET.forEach(letter => {
+    const link = document.createElement('a');
+    link.href = `#letter-${letter}`;
+    link.textContent = letter.toUpperCase();
+    link.addEventListener('click', event => {
+      event.preventDefault();
+      const row = document.getElementById(`letter-${letter}`)?.closest('tr');
+      if (!row) return;
+      const wrap = document.querySelector('.table-wrap');
+      const headerHeight = document.querySelector('#gameTable thead').offsetHeight;
+      wrap.scrollTop += row.getBoundingClientRect().top - wrap.getBoundingClientRect().top - headerHeight;
+    });
+    nav.appendChild(link);
+  });
+}
+
+function updateAlphaAnchors() {
+  // Matches the BGG sort order, which ignores leading punctuation and articles.
+  const sortTitle = title => title.replace(/^[^\p{L}\p{N}]+/u, '').replace(/^(the|a|an)\s+/i, '');
+  const rows = [...document.querySelectorAll('#bodyRows tr')];
+  const links = document.querySelectorAll('#alphaNav a');
+  ALPHABET.forEach((letter, index) => {
+    // Anchor sits at the first title sorting after the previous letter + "zzz" (e.g. B after "azzz").
+    const threshold = index === 0 ? '' : `${ALPHABET[index - 1]}zzz`;
+    const row = rows.find(tr => sortTitle(tr.dataset.title).localeCompare(threshold, 'en', { sensitivity: 'base' }) > 0);
+    links[index]?.classList.toggle('disabled', !row);
+    links[index]?.setAttribute('aria-disabled', String(!row));
+    if (!row) return;
+    const anchor = document.createElement('span');
+    anchor.id = `letter-${letter}`;
+    row.firstElementChild.prepend(anchor);
+  });
 }
 
 function enableColumnResize(headerRow) {
@@ -2231,6 +2534,8 @@ document.getElementById('dialogPlayButton').addEventListener('click', () => {
 
 setupUserLookupMenu();
 setupRulesPromptContextMenu();
+setupSidebarRail();
+buildSidebar();
 
 function buildRows(games) {
   const tbody = document.getElementById('bodyRows');
@@ -2241,6 +2546,7 @@ function buildRows(games) {
   const frag = document.createDocumentFragment();
   games.forEach(game => {
     const tr = document.createElement('tr');
+    tr.dataset.title = game.game_name || '';
     columns.forEach(col => {
       const td = document.createElement('td');
       if (col.type === 'rules') {
@@ -2394,6 +2700,7 @@ function loadData() {
       allGames = joinedRows.map(normalizeCsvRow);
       buildHeader();
       buildSummaryCards();
+      buildAlphaNav();
       const viewSelect = document.getElementById('viewSelect');
       viewSelect.addEventListener('change', (event) => {
         changeView(event.target.value);
