@@ -93,7 +93,11 @@
   body.collection-view .table-wrap { margin: 0 0 0 0; border: 0; }
   .main-layout { flex: 1 1 auto; min-height: 0; display: flex; }
   .main-layout .table-wrap { min-width: 0; }
-  .sidebar { flex: 0 0 220px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; padding: 12px; overflow-y: auto; background: #f7f8fb; border-right: 1px solid #d7dde6; font-size: 13px; }
+  .sidebar { flex: 0 0 220px; min-height: 0; box-sizing: border-box; display: flex; flex-direction: column; background: #f7f8fb; border-right: 1px solid #d7dde6; font-size: 13px; }
+  .sidebar-filters { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 12px; overflow-y: auto; }
+  .sidebar-status { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 12px; border-top: 1px solid #c6d3ec; background: #e7edf9; }
+  .sidebar-status-label { color: #5b6b85; font-size: 12px; font-weight: 800; letter-spacing: .03em; }
+  .sidebar-status-count { color: #17324b; font-size: 15px; font-weight: 800; white-space: nowrap; }
   .main-layout.sidebar-collapsed .sidebar { display: none; }
   .sidebar-rail { flex: 0 0 28px; display: flex; flex-direction: column; align-items: center; padding: 6px 0; background: #e7edf9; border-right: 1px solid #d7dde6; }
   .sidebar-toggle { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; padding: 6px 0; border: 0; color: #2867a8; background: transparent; cursor: pointer; font-weight: 800; }
@@ -530,6 +534,7 @@
     </button>
   </div>
   <aside class="sidebar" id="filterSidebar" aria-label="Filters">
+    <div class="sidebar-filters">
     <input id="sidebarSearch" class="sidebar-search" type="search" placeholder="Search titles…" aria-label="Search titles">
     <section class="sidebar-section">
       <h2>Players</h2>
@@ -559,6 +564,11 @@
       <div class="sidebar-section-header"><h2>Min Avg Rating</h2><span class="sidebar-range-value" id="ratingValue">any</span></div>
       <input class="sidebar-slider-single" type="range" id="ratingMin" min="0" max="10" step="0.1" value="0" aria-label="Minimum average rating" aria-valuetext="any">
     </section>
+    </div>
+    <div class="sidebar-status" role="status">
+      <span class="sidebar-status-label">SHOWING</span>
+      <span class="sidebar-status-count"><span id="sidebarResultCount">0</span> objects</span>
+    </div>
   </aside>
   <nav class="alpha-nav" id="alphaNav" aria-label="Jump to letter"></nav>
   <div class="table-wrap">
@@ -1652,6 +1662,7 @@ function render() {
 
   document.getElementById('bodyRows').innerHTML = '';
   buildRows(games);
+  document.getElementById('sidebarResultCount').textContent = games.length.toLocaleString('en-US');
   updateAlphaAnchors();
   updateSummaryCards(games);
 }
