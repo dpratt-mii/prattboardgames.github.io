@@ -641,6 +641,10 @@
       <button class="prompt-button secondary" id="promptCopyName" type="button">Copy Game Name</button>
     </div>
     <div class="prompt-row">
+      <label for="promptPageCount">Pages</label>
+      <input id="promptPageCount" type="number" min="1" max="20" step="1" value="2" aria-label="Number of pages">
+    </div>
+    <div class="prompt-row">
       <input id="promptRuleUrl" type="url" placeholder="https://rule-book.org/.../pdf" aria-label="Rule URL">
     </div>
     <div class="prompt-confirm" id="promptConfirm" hidden>
@@ -2106,7 +2110,7 @@ document.getElementById('dialogPdfButton').addEventListener('click', () => {
   if (quickRulesFile) window.open(`quickrules/${quickRulesFile}`, '_blank', 'noopener,noreferrer');
 });
 
-const RULES_PROMPT_TEMPLATE = `Create a two-page 8.5 x 14 landscape Quick Reference Guide PDF for [GAME NAME], which has a bggid of [BGGID], and use the rules at [Rule URL].
+const RULES_PROMPT_TEMPLATE = `Create a [PAGE COUNT]-page 8.5 x 14 landscape Quick Reference Guide PDF for [GAME NAME], which has a bggid of [BGGID], and use the rules at [Rule URL].
 The guide is specifically intended to be printed front and back on a single sheet of paper. The design should prioritize readability, table use, large setup visuals, and fast gameplay reference over maximum content density.
 The completed guide should resemble the attached player aid that allows players to learn setup, understand gameplay flow, and quickly reference rules during play without consulting the full rulebook.
 
@@ -2597,14 +2601,15 @@ Output Filename Requirements
 Then generate the complete two-page front-and-back Quick Reference Guide.`;
 
 const RULE_BOOK_URL = 'https://rule-book.org/';
-const RULES_PROMPT_FILES_FIRST_LINE = 'Using these files; Create a two-page 8.5 x 14 landscape Quick Reference Guide PDF for [GAME NAME], which has a bggid of [BGGID].';
-const promptState = { game: null, candidateUrl: '', ruleUrl: '', source: 'url' };
+const RULES_PROMPT_FILES_FIRST_LINE = 'Using these files; Create a [PAGE COUNT]-page 8.5 x 14 landscape Quick Reference Guide PDF for [GAME NAME], which has a bggid of [BGGID].';
+const promptState = { game: null, candidateUrl: '', ruleUrl: '', source: 'url', pageCount: 2 };
 
-function generateRulesPrompt(gameName, bggId, ruleUrl, source) {
+function generateRulesPrompt(gameName, bggId, ruleUrl, source, pageCount = 2) {
   const template = source === 'files'
     ? RULES_PROMPT_TEMPLATE.replace(/^.*$/m, RULES_PROMPT_FILES_FIRST_LINE)
     : RULES_PROMPT_TEMPLATE;
   return template
+    .replaceAll('[PAGE COUNT]', String(pageCount))
     .replaceAll('[GAME NAME]', gameName)
     .replaceAll('[BGGID]', bggId)
     .replaceAll('[Rule URL]', ruleUrl);
@@ -2645,7 +2650,7 @@ function setPromptStatus(message, isError = false) {
 
 function updatePromptOutput() {
   const game = promptState.game;
-  const prompt = generateRulesPrompt(game.game_name || '', String(game.bgg_id ?? ''), promptState.ruleUrl || '[Rule URL]', promptState.source);
+  const prompt = generateRulesPrompt(game.game_name || '', String(game.bgg_id ?? ''), promptState.ruleUrl || '[Rule URL]', promptState.source, promptState.pageCount);
   document.getElementById('promptOutput').value = prompt;
   document.getElementById('promptCopy').disabled = promptState.source === 'url' && !promptState.ruleUrl;
   return prompt;
@@ -2668,7 +2673,9 @@ async function openRulesPromptGenerator(game) {
   promptState.game = game;
   promptState.candidateUrl = '';
   promptState.ruleUrl = '';
+  promptState.pageCount = 2;
   document.getElementById('promptDialogTitle').textContent = `Quick Reference Prompt \u2014 ${game.game_name || 'Game'}`;
+  document.getElementById('promptPageCount').value = '2';
   document.getElementById('promptRuleUrl').value = '';
   document.getElementById('promptConfirm').hidden = true;
   updatePromptOutput();
@@ -2750,6 +2757,12 @@ document.querySelectorAll('input[name="promptRuleSource"]').forEach(radio => {
     promptState.source = radio.value;
     if (promptState.game) updatePromptOutput();
   });
+});
+document.getElementById('promptPageCount').addEventListener('input', event => {
+  const pageCount = Math.min(20, Math.max(1, Math.round(Number(event.target.value) || 1)));
+  event.target.value = String(pageCount);
+  promptState.pageCount = pageCount;
+  if (promptState.game) updatePromptOutput();
 });
 document.getElementById('promptCopyName').addEventListener('click', async () => {
   const copied = await copyText(promptState.game?.game_name || '');
