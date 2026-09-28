@@ -294,8 +294,10 @@
   .dialog-rules-button { color: #fff; background: #2867a8; }
   #promptDialog { width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; border: 0; color: #17324b; background: #fff; box-shadow: 0 24px 80px rgba(0, 0, 0, .45); }
   #promptDialog::backdrop { background: rgba(1, 1, 6, .7); }
-  .prompt-shell { position: relative; display: flex; flex-direction: column; gap: 14px; max-height: calc(100vh - 32px); box-sizing: border-box; padding: 24px; overflow-y: auto; }
-  .prompt-shell h2 { margin: 0; padding-right: 36px; font-size: 22px; }
+  #promptDialog[open] { display: flex; flex-direction: column; }
+  .prompt-shell { position: relative; display: flex; flex: 1 1 auto; min-height: 0; flex-direction: column; gap: 14px; box-sizing: border-box; padding: 24px; overflow-y: auto; }
+  .prompt-resize-handle { position: absolute; right: 0; bottom: 0; z-index: 1; width: 18px; height: 18px; cursor: nwse-resize; touch-action: none; background: linear-gradient(135deg, transparent 50%, #9099a6 50%, #9099a6 58%, transparent 58%, transparent 70%, #9099a6 70%, #9099a6 78%, transparent 78%); }
+  .prompt-shell h2 { margin: 0; padding-right: 36px; font-size: 22px; cursor: move; user-select: none; touch-action: none; }
   .prompt-close { position: absolute; top: 8px; right: 12px; border: 0; color: #333; background: transparent; font-size: 30px; line-height: 1; cursor: pointer; }
   .prompt-steps { margin: 0; padding-left: 22px; line-height: 1.5; }
   .prompt-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -307,7 +309,15 @@
   .prompt-confirm p { margin: 0 0 10px; font-weight: 700; word-break: break-all; }
   .prompt-status { min-height: 20px; margin: 0; color: #2d6a4f; font-weight: 700; }
   .prompt-status.error { color: #b00020; }
-  #promptOutput { width: 100%; min-height: 220px; box-sizing: border-box; padding: 10px; border: 1px solid #aab4bf; border-radius: 4px; font: 13px/1.4 Consolas, monospace; resize: vertical; }
+  .prompt-source { display: flex; align-items: center; gap: 10px; }
+  .prompt-source-label { font-weight: 700; }
+  .prompt-source-options { display: inline-flex; border: 1px solid #2867a8; border-radius: 4px; overflow: hidden; }
+  .prompt-source-option { position: relative; cursor: pointer; }
+  .prompt-source-option input { position: absolute; opacity: 0; pointer-events: none; }
+  .prompt-source-option span { display: block; padding: 6px 14px; color: #2867a8; background: #fff; font-weight: 700; }
+  .prompt-source-option input:checked + span { color: #fff; background: #2867a8; }
+  .prompt-source-option input:focus-visible + span { outline: 2px solid #75a7df; outline-offset: -2px; }
+  #promptOutput { flex: 1 0 220px; width: 100%; min-height: 220px; box-sizing: border-box; padding: 10px; border: 1px solid #aab4bf; border-radius: 4px; font: 13px/1.4 Consolas, monospace; resize: vertical; }
   .rules-cell { text-align: center !important; vertical-align: middle !important; }
   .rules-prompt-button, .rules-button-pdf, .rules-search-button { display: block; width: max-content; margin: 6px auto 0; }
   .rules-button { padding: 7px 10px; border: 1px solid #2867a8; border-radius: 4px; color: #fff; background: #2867a8; font-weight: 700; cursor: pointer; white-space: nowrap; }
@@ -621,7 +631,7 @@
 <dialog id="promptDialog" aria-labelledby="promptDialogTitle">
   <div class="prompt-shell">
     <button class="prompt-close" id="promptDialogClose" type="button" aria-label="Close prompt generator">&times;</button>
-    <h2 id="promptDialogTitle">Quick Reference Prompt</h2>
+    <h2 id="promptDialogTitle" title="Drag to move">Quick Reference Prompt</h2>
     <ol class="prompt-steps">
       <li>The game name has been copied. Paste it (Ctrl+V) into the <strong>Search for a board game</strong> box in the rule-book.org window.</li>
       <li>Select the matching game. When the address ends in <strong>/pdf</strong>, copy the address bar URL and return here.</li>
@@ -641,11 +651,19 @@
       </div>
     </div>
     <p class="prompt-status" id="promptStatus" role="status"></p>
+    <div class="prompt-source" role="radiogroup" aria-labelledby="promptRuleSourceLabel">
+      <span class="prompt-source-label" id="promptRuleSourceLabel">Rule Source</span>
+      <div class="prompt-source-options">
+        <label class="prompt-source-option"><input type="radio" name="promptRuleSource" value="url" checked><span>URL</span></label>
+        <label class="prompt-source-option"><input type="radio" name="promptRuleSource" value="files"><span>Files</span></label>
+      </div>
+    </div>
     <textarea id="promptOutput" readonly aria-label="Generated prompt"></textarea>
     <div class="prompt-row">
       <button class="prompt-button" id="promptCopy" type="button" disabled>Copy Prompt</button>
     </div>
   </div>
+  <div class="prompt-resize-handle" id="promptResizeHandle" title="Drag to resize" aria-hidden="true"></div>
 </dialog>
 <dialog id="userLookupDialog" aria-labelledby="userLookupTitle">
   <div class="user-lookup-shell">
@@ -2402,10 +2420,14 @@ Output Filename Requirements
 Then generate the complete two-page front-and-back Quick Reference Guide.`;
 
 const RULE_BOOK_URL = 'https://rule-book.org/';
-const promptState = { game: null, candidateUrl: '', ruleUrl: '' };
+const RULES_PROMPT_FILES_FIRST_LINE = 'Using these files; Create a two-page 8.5 x 14 landscape Quick Reference Guide PDF for [GAME NAME], which has a bggid of [BGGID].';
+const promptState = { game: null, candidateUrl: '', ruleUrl: '', source: 'url' };
 
-function generateRulesPrompt(gameName, bggId, ruleUrl) {
-  return RULES_PROMPT_TEMPLATE
+function generateRulesPrompt(gameName, bggId, ruleUrl, source) {
+  const template = source === 'files'
+    ? RULES_PROMPT_TEMPLATE.replace(/^.*$/m, RULES_PROMPT_FILES_FIRST_LINE)
+    : RULES_PROMPT_TEMPLATE;
+  return template
     .replaceAll('[GAME NAME]', gameName)
     .replaceAll('[BGGID]', bggId)
     .replaceAll('[Rule URL]', ruleUrl);
@@ -2446,9 +2468,9 @@ function setPromptStatus(message, isError = false) {
 
 function updatePromptOutput() {
   const game = promptState.game;
-  const prompt = generateRulesPrompt(game.game_name || '', String(game.bgg_id ?? ''), promptState.ruleUrl || '[Rule URL]');
+  const prompt = generateRulesPrompt(game.game_name || '', String(game.bgg_id ?? ''), promptState.ruleUrl || '[Rule URL]', promptState.source);
   document.getElementById('promptOutput').value = prompt;
-  document.getElementById('promptCopy').disabled = !promptState.ruleUrl;
+  document.getElementById('promptCopy').disabled = promptState.source === 'url' && !promptState.ruleUrl;
   return prompt;
 }
 
@@ -2473,7 +2495,9 @@ async function openRulesPromptGenerator(game) {
   document.getElementById('promptRuleUrl').value = '';
   document.getElementById('promptConfirm').hidden = true;
   updatePromptOutput();
-  document.getElementById('promptDialog').showModal();
+  const promptDialog = document.getElementById('promptDialog');
+  ['margin', 'left', 'top', 'right', 'bottom', 'width', 'height', 'max-width', 'max-height'].forEach(property => promptDialog.style.removeProperty(property));
+  promptDialog.showModal();
   const copied = await copyText(game.game_name || '');
   openRuleBookSearch();
   setPromptStatus(copied ? 'Game name copied. Paste it into the rule-book.org search box.' : 'Unable to copy the game name automatically; use Copy Game Name.', !copied);
@@ -2481,7 +2505,7 @@ async function openRulesPromptGenerator(game) {
 
 async function checkClipboardForRuleUrl() {
   const dialog = document.getElementById('promptDialog');
-  if (!dialog.open || !navigator.clipboard?.readText) return;
+  if (!dialog.open || promptState.source === 'files' || !navigator.clipboard?.readText) return;
   try {
     offerRuleUrl(await navigator.clipboard.readText());
   } catch {
@@ -2495,7 +2519,61 @@ document.getElementById('dialogPromptButton').addEventListener('click', () => {
 document.getElementById('promptDialogClose').addEventListener('click', () => {
   document.getElementById('promptDialog').close();
 });
+(() => {
+  const dialog = document.getElementById('promptDialog');
+  const handle = document.getElementById('promptDialogTitle');
+  handle.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const start = dialog.getBoundingClientRect();
+    const offsetX = event.clientX - start.left;
+    const offsetY = event.clientY - start.top;
+    handle.setPointerCapture(event.pointerId);
+    const onMove = moveEvent => {
+      const left = Math.min(Math.max(0, moveEvent.clientX - offsetX), window.innerWidth - start.width);
+      const top = Math.min(Math.max(0, moveEvent.clientY - offsetY), window.innerHeight - start.height);
+      // Clearing right/bottom stops the modal's default inset from stretching it while positioned.
+      Object.assign(dialog.style, { margin: '0', left: `${left}px`, top: `${top}px`, right: 'auto', bottom: 'auto' });
+    };
+    const onEnd = () => {
+      handle.removeEventListener('pointermove', onMove);
+      handle.removeEventListener('pointerup', onEnd);
+      handle.removeEventListener('pointercancel', onEnd);
+    };
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', onEnd);
+    handle.addEventListener('pointercancel', onEnd);
+  });
+  const resizeHandle = document.getElementById('promptResizeHandle');
+  resizeHandle.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const start = dialog.getBoundingClientRect();
+    // Pin the current position so the centered modal grows only right and down.
+    Object.assign(dialog.style, { margin: '0', left: `${start.left}px`, top: `${start.top}px`, right: 'auto', bottom: 'auto', maxWidth: 'none', maxHeight: 'none' });
+    resizeHandle.setPointerCapture(event.pointerId);
+    const onMove = moveEvent => {
+      const width = Math.min(Math.max(360, start.width + moveEvent.clientX - event.clientX), window.innerWidth - start.left);
+      const height = Math.min(Math.max(240, start.height + moveEvent.clientY - event.clientY), window.innerHeight - start.top);
+      Object.assign(dialog.style, { width: `${width}px`, height: `${height}px` });
+    };
+    const onEnd = () => {
+      resizeHandle.removeEventListener('pointermove', onMove);
+      resizeHandle.removeEventListener('pointerup', onEnd);
+      resizeHandle.removeEventListener('pointercancel', onEnd);
+    };
+    resizeHandle.addEventListener('pointermove', onMove);
+    resizeHandle.addEventListener('pointerup', onEnd);
+    resizeHandle.addEventListener('pointercancel', onEnd);
+  });
+})();
 document.getElementById('promptReopenSearch').addEventListener('click', openRuleBookSearch);
+document.querySelectorAll('input[name="promptRuleSource"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    promptState.source = radio.value;
+    if (promptState.game) updatePromptOutput();
+  });
+});
 document.getElementById('promptCopyName').addEventListener('click', async () => {
   const copied = await copyText(promptState.game?.game_name || '');
   setPromptStatus(copied ? 'Game name copied.' : 'Unable to copy the game name.', !copied);
