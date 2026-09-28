@@ -2375,6 +2375,183 @@ Validate
 - No header/body collisions.
 - No content outside printable area.
 
+Good catch. The root cause of both issues is that the prompt specifies validation requirements but does not include explicit layout-failure detection rules targeted at flow-diagram symbols, bottom-panel vertical overflow, header-to-content collision in small panels, or mandatory render review of every section independently.
+
+Fixes for the current guide
+
+3 STRUCTURE OF A TURN
+
+Replace lingering "v" characters in round and turn structures with down-arrow graphics (↓), thin connecting lines, chevron separators, or phase cards joined by vertical rules.
+
+4 END OF GAME panel
+
+Reserve safety space before filling the final panel, and reflow or condense content when the panel approaches its lower boundary.
+
+STRUCTURE OF A ROUND / TURN VALIDATION
+
+Flow diagrams may never use standalone
+v
+V
+>
+<
+characters as arrow substitutes.
+
+Use only:
+↓
+→
+graphic arrows
+or rendered connector lines.
+
+After rendering:
+Inspect the complete round structure section at 220 DPI.
+
+Remove any orphan characters,
+misaligned arrows,
+or stray symbols.
+
+BOTTOM PANEL SAFETY RULE
+
+For the final panel on any page:
+
+Reserve at least 12% unused vertical capacity.
+
+The final text line must remain at least:
+
+0.18"
+above the bottom panel boundary.
+
+If content approaches this threshold:
+
+1. Expand panel height.
+2. Condense wording.
+3. Reduce bullet count.
+4. Reallocate page space.
+
+Never allow text within
+0.18"
+of a panel border.
+
+Advanced Layout QA Rules (Required)
+Section-by-Section Validation
+
+Render both pages at 220 DPI.
+
+Inspect every section independently:
+
+Game Overview
+Setup Chronology
+Structure of a Round
+Setup Image
+Key Mechanics
+Scoring Summary
+Strategic Tips
+End of Game
+
+A page passing overall validation does NOT qualify as a successful validation.
+
+Every section must pass independently.
+
+Text Bounding Validation
+
+For every text block:
+
+Verify:
+
+No clipping
+No cutoff descenders
+No cropped first lines
+No cropped last lines
+No hidden bullets
+No overlap with neighboring content
+
+Required Safe Distance:
+
+0.18" from all borders
+0.12" below headers
+0.10" between neighboring text blocks
+
+If any text enters the safety zone:
+
+STOP
+
+Reflow the layout.
+
+Overflow Detection Rules
+
+Before final delivery:
+
+Perform a panel-by-panel overflow scan.
+
+For every panel verify:
+
+final line visible
+no clipping
+no boundary touching
+no footer collisions
+no image overlap
+
+Any panel failing this test requires regeneration.
+
+Reserved White-Space Rule
+
+Every panel must retain unused whitespace.
+
+Target:
+
+5–15% free space.
+
+Minimum:
+
+3% free space.
+
+If a panel becomes completely filled:
+
+Treat as a validation failure.
+
+Reflow content.
+
+Never deliver a fully packed panel.
+
+Footer Collision Validation
+
+Verify:
+
+No panel contents overlap footer regions.
+No hyperlinks overlap panel content.
+No footer text overlaps guide content.
+
+Maintain:
+
+0.20" minimum separation.
+
+Final Human-Style Review Pass
+
+After all automated validation:
+
+Render both pages.
+
+Perform a visual inspection of:
+
+Section titles
+Flow diagrams
+Bullet alignment
+Text wrapping
+Panel borders
+Bottom panels
+Setup image
+Hyperlink area
+
+Reject and regenerate if any of the following exist:
+
+stray symbols
+clipped text
+crowded bullets
+panel-boundary violations
+touching borders
+distorted images
+uneven spacing
+layout artifacts
+
 Quality-Control Loop
 If any validation check fails:
 
