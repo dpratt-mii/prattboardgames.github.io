@@ -117,7 +117,7 @@
   .sidebar-card-title { color: #5b6b85; font-size: 12px; font-weight: 800; letter-spacing: .03em; }
   .sidebar-card-value { margin-top: 2px; color: #111; font-size: 20px; font-weight: 800; }
   .sidebar-card-note { color: #444; font-size: 12px; }
-  .alpha-nav { flex: 0 0 26px; display: flex; flex-direction: column; justify-content: space-between; padding: 6px 0; overflow-y: auto; background: #f7f8fb; border-left: 1px solid #d7dde6; }
+  .alpha-nav { flex: 0 0 26px; display: flex; flex-direction: column; justify-content: space-between; padding: 6px 0; overflow-y: auto; background: #f7f8fb; border-right: 1px solid #d7dde6; }
   .alpha-nav a { display: block; padding: 1px 0; color: #075bbb; font-size: 12px; font-weight: 700; text-align: center; text-decoration: none; }
   .alpha-nav a:hover, .alpha-nav a:focus { background: #e7edf9; }
   .alpha-nav a.disabled { color: #b0b8c4; pointer-events: none; }
@@ -550,6 +550,7 @@
       <input class="sidebar-slider-single" type="range" id="ratingMin" min="0" max="10" step="0.1" value="0" aria-label="Minimum average rating" aria-valuetext="any">
     </section>
   </aside>
+  <nav class="alpha-nav" id="alphaNav" aria-label="Jump to letter"></nav>
   <div class="table-wrap">
     <table id="gameTable">
       <colgroup id="colGroup"></colgroup>
@@ -560,7 +561,6 @@
       <tbody id="bodyRows"></tbody>
     </table>
   </div>
-  <nav class="alpha-nav" id="alphaNav" aria-label="Jump to letter"></nav>
 </div>
 <dialog id="gameDialog" aria-labelledby="dialogGameTitle">
   <div class="game-dialog-shell">
