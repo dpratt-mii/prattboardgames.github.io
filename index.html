@@ -537,8 +537,12 @@
     <div class="sidebar-filters">
     <input id="sidebarSearch" class="sidebar-search" type="search" placeholder="Search titles…" aria-label="Search titles">
     <section class="sidebar-section">
-      <h2>Players</h2>
+      <h2>Min Players</h2>
       <div class="sidebar-options" id="playersOptions"></div>
+    </section>
+    <section class="sidebar-section">
+      <h2>Max Players</h2>
+      <div class="sidebar-options" id="maxPlayersOptions"></div>
     </section>
     <section class="sidebar-section">
       <div class="sidebar-section-header"><h2>Play Time</h2><span class="sidebar-range-value" id="playTimeValue">0m – 10h+</span></div>
@@ -917,8 +921,18 @@ const SIDEBAR_FILTER_GROUPS = [
     options: [
       ...[1, 2, 3, 4, 5, 6].map(count => ({
         label: String(count),
-        test: game => game.min_players !== null && game.max_players !== null
-          && game.min_players <= count && game.max_players >= count
+        test: game => game.min_players === count
+      })),
+      { label: '7+', test: game => game.min_players !== null && game.min_players >= 7 }
+    ]
+  },
+  {
+    key: 'maxPlayers',
+    containerId: 'maxPlayersOptions',
+    options: [
+      ...[1, 2, 3, 4, 5, 6].map(count => ({
+        label: String(count),
+        test: game => game.max_players === count
       })),
       { label: '7+', test: game => game.max_players !== null && game.max_players >= 7 }
     ]
@@ -956,6 +970,7 @@ const SIDEBAR_RANGE_SLIDERS = [
 const sidebarState = {
   title: '',
   players: null,
+  maxPlayers: null,
   ranges: Object.fromEntries(SIDEBAR_RANGE_SLIDERS.map(slider => [slider.key, [slider.min, slider.max]])),
   minRating: 0
 };
