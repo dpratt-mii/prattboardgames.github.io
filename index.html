@@ -98,6 +98,9 @@
   .sidebar-status { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 12px; border-top: 1px solid #c6d3ec; background: #e7edf9; }
   .sidebar-status-label { color: #5b6b85; font-size: 12px; font-weight: 800; letter-spacing: .03em; }
   .sidebar-status-count { color: #17324b; font-size: 15px; font-weight: 800; white-space: nowrap; }
+  th.overview-column-header .col-label { writing-mode: horizontal-tb; transform: none; white-space: nowrap; }
+  .overview-button { writing-mode: horizontal-tb; transform: none; min-height: 0; }
+  .rules-pdf-button { writing-mode: vertical-rl; transform: rotate(180deg); min-height: 48px; }
   .main-layout.sidebar-collapsed .sidebar { display: none; }
   .sidebar-rail { flex: 0 0 28px; display: flex; flex-direction: column; align-items: center; padding: 6px 0; background: #e7edf9; border-right: 1px solid #d7dde6; }
   .sidebar-toggle { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; padding: 6px 0; border: 0; color: #2867a8; background: transparent; cursor: pointer; font-weight: 800; }
@@ -128,6 +131,7 @@
   table { border-collapse: collapse; font-size: 12px; white-space: nowrap; table-layout: fixed; }
   th, td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; overflow: hidden; text-overflow: ellipsis; }
   thead th { position: sticky; top: 0; background: #e7edf9; color: #222; z-index: 2; }
+  #groupHeaderRow th { text-align: center; font-weight: 800; }
   body:not(.collection-view) thead th { white-space: normal; word-break: break-word; }
   tbody tr:nth-child(even) { background: #fafafa; }
   tbody tr:hover { background: #eef6ff; }
@@ -324,6 +328,8 @@
   #promptOutput { flex: 1 0 220px; width: 100%; min-height: 220px; box-sizing: border-box; padding: 10px; border: 1px solid #aab4bf; border-radius: 4px; font: 13px/1.4 Consolas, monospace; resize: vertical; }
   .rules-cell { text-align: center !important; vertical-align: middle !important; }
   .rules-prompt-button, .rules-button-pdf, .rules-search-button { display: block; width: max-content; margin: 6px auto 0; }
+  .google-rules-button { writing-mode: vertical-rl; transform: rotate(180deg); min-height: 64px; }
+  .google-game-button { writing-mode: vertical-rl; transform: rotate(180deg); min-height: 64px; }
   .rules-button { padding: 7px 10px; border: 1px solid #2867a8; border-radius: 4px; color: #fff; background: #2867a8; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .rules-button:hover, .rules-button:focus, .dialog-rules-button:hover, .dialog-rules-button:focus { background: #174d82; }
   .rules-button.rules-button-pdf { color: #b30b00; border-color: #b30b00; background: #fff; }
@@ -579,6 +585,7 @@
     <table id="gameTable">
       <colgroup id="colGroup"></colgroup>
       <thead>
+        <tr id="groupHeaderRow"></tr>
         <tr id="headerRow"></tr>
         <tr id="filterRow"></tr>
       </thead>
@@ -773,8 +780,10 @@ const COLLECTION_COLUMNS = [
 
 const ADDITIONAL_COLUMNS = [];
 const THUMBNAIL_COLUMN = { header: '', field: 'boardgame.thumbnail' };
+const OVERVIEW_COLUMN = { header: 'RECAP', type: 'overview' };
 const RULES_COLUMN = { header: 'Rules', type: 'rules' };
-const GOOGLE_SEARCH_COLUMN = { header: 'Search', type: 'googleSearch' };
+const GOOGLE_RULES_COLUMN = { header: 'RULES', type: 'googleRules', group: 'Search' };
+const GOOGLE_GAME_COLUMN = { header: 'GAME', type: 'googleGame', group: 'Search' };
 const QUICK_RULES_FILES = [
   '7_Wonders_Duel_Quick_Reference_Guide(173346).pdf',
   '7_Wonders_Quick_Reference_Guide(68448).pdf',
@@ -1103,7 +1112,7 @@ function getActiveColumns() {
   const activeColumns = columns.concat(ADDITIONAL_COLUMNS);
   if (activeView !== 'collection') {
     const detailedColumns = thumbnailEnabled ? [THUMBNAIL_COLUMN, ...activeColumns] : activeColumns;
-    return [...detailedColumns, RULES_COLUMN, GOOGLE_SEARCH_COLUMN];
+    return [...detailedColumns, OVERVIEW_COLUMN, RULES_COLUMN, GOOGLE_RULES_COLUMN, GOOGLE_GAME_COLUMN];
   }
   const value3Column = ADDITIONAL_COLUMNS.find(column => column.field === VALUE3_FIELD);
   const averageRatingColumn = value3Column
@@ -1113,7 +1122,7 @@ function getActiveColumns() {
     ? [COLLECTION_COLUMNS[0], averageRatingColumn, ...COLLECTION_COLUMNS.slice(1)]
     : COLLECTION_COLUMNS;
   const visibleColumns = thumbnailEnabled ? [THUMBNAIL_COLUMN, ...collectionColumns] : collectionColumns;
-  return [...visibleColumns, RULES_COLUMN, GOOGLE_SEARCH_COLUMN];
+  return [...visibleColumns, OVERVIEW_COLUMN, RULES_COLUMN, GOOGLE_RULES_COLUMN, GOOGLE_GAME_COLUMN];
 }
 
 function toNumber(value) {
@@ -1545,8 +1554,9 @@ function buildColGroup(columns = getActiveColumns()) {
   const colGroup = document.getElementById('colGroup');
   colGroup.innerHTML = '';
   const frag = document.createDocumentFragment();
-  const rulesColumnWidth = getActionColumnWidth(['Brief Overview', 'Quick Rules PDF', 'Generate Prompt'], 'rules-button-pdf');
-  const searchColumnWidth = getActionColumnWidth(['Google Rules', 'Google Game'], 'rules-search-button');
+  const overviewColumnWidth = getActionColumnWidth(['RECAP'], 'rules-button');
+  const rulesColumnWidth = getActionColumnWidth(['PDF'], 'rules-button-pdf rules-pdf-button');
+  const searchColumnWidth = getActionColumnWidth(['Rules', 'Game'], 'rules-search-button');
   const collectionWidths = new Map([
     [THUMBNAIL_COLUMN.field, 125],
     ['game_name', 225],
@@ -1559,9 +1569,11 @@ function buildColGroup(columns = getActiveColumns()) {
   ]);
   columns.forEach(column => {
     const col = document.createElement('col');
-    col.style.width = column.type === 'rules'
+    col.style.width = column.type === 'overview'
+      ? overviewColumnWidth
+      : column.type === 'rules'
       ? rulesColumnWidth
-      : column.type === 'googleSearch'
+      : column.type === 'googleRules' || column.type === 'googleGame'
       ? searchColumnWidth
       : activeView === 'collection'
       ? (collectionWidths.get(column.field) ?? 120) + 'px'
@@ -1587,12 +1599,25 @@ function buildHeader() {
   const columns = getActiveColumns();
   document.body.classList.toggle('thumbnail-view', thumbnailEnabled && activeView === 'collection');
   buildColGroup(columns);
+  const groupRow = document.getElementById('groupHeaderRow');
+  groupRow.innerHTML = '';
+  const groupFrag = document.createDocumentFragment();
+  columns.forEach((col, index) => {
+    if (col.group && columns[index - 1]?.group === col.group) return;
+    const th = document.createElement('th');
+    const groupSize = col.group ? columns.slice(index).findIndex(next => next.group !== col.group) : 1;
+    th.colSpan = groupSize === -1 ? columns.length - index : groupSize;
+    th.textContent = col.group || '';
+    groupFrag.appendChild(th);
+  });
+  groupRow.appendChild(groupFrag);
   const row = document.getElementById('headerRow');
   row.innerHTML = '';
   const frag = document.createDocumentFragment();
   columns.forEach((col, index) => {
     const th = document.createElement('th');
     th.dataset.colIndex = index;
+    if (col.type === 'overview') th.classList.add('overview-column-header');
     const label = document.createElement('span');
     label.className = 'col-label';
     label.textContent = col.header;
@@ -2843,21 +2868,23 @@ function buildRows(games) {
     tr.dataset.title = game.game_name || '';
     columns.forEach(col => {
       const td = document.createElement('td');
-      if (col.type === 'rules') {
+      if (col.type === 'overview') {
         td.className = 'rules-cell';
-        const button = document.createElement('button');
+        const overviewButton = document.createElement('button');
+        overviewButton.className = 'rules-button overview-button';
+        overviewButton.type = 'button';
+        overviewButton.textContent = 'RECAP';
+        overviewButton.setAttribute('aria-label', `Open rules overview for ${game.game_name || 'this game'}`);
+        overviewButton.addEventListener('click', () => openRulesDialog(game));
+        td.appendChild(overviewButton);
+      } else if (col.type === 'rules') {
+        td.className = 'rules-cell';
         const quickRulesFile = findQuickRulesFile(game);
-        button.className = 'rules-button';
-        button.type = 'button';
-        button.textContent = 'Brief Overview';
-        button.setAttribute('aria-label', `Open rules overview for ${game.game_name || 'this game'}`);
-        button.addEventListener('click', () => openRulesDialog(game));
-        td.appendChild(button);
         if (quickRulesFile) {
           const pdfButton = document.createElement('button');
-          pdfButton.className = 'rules-button rules-button-pdf';
+          pdfButton.className = 'rules-button rules-button-pdf rules-pdf-button';
           pdfButton.type = 'button';
-          pdfButton.textContent = 'Quick Rules PDF';
+          pdfButton.textContent = 'PDF';
           pdfButton.setAttribute('aria-label', `Open quick rules PDF for ${game.game_name || 'this game'}`);
           pdfButton.addEventListener('click', () => {
             window.open(`quickrules/${quickRulesFile}`, '_blank', 'noopener,noreferrer');
@@ -2866,25 +2893,25 @@ function buildRows(games) {
         } else {
           td.addEventListener('contextmenu', event => openRulesPromptContextMenu(event, game));
         }
-      } else if (col.type === 'googleSearch') {
+      } else if (col.type === 'googleRules' || col.type === 'googleGame') {
         td.className = 'rules-cell';
-        const bggRulesButton = document.createElement('button');
-        bggRulesButton.className = 'rules-button rules-search-button';
-        bggRulesButton.type = 'button';
-        bggRulesButton.textContent = 'Google Rules';
-        bggRulesButton.setAttribute('aria-label', `Search BoardGameGeek rules for ${game.game_name || 'this game'}`);
-        bggRulesButton.addEventListener('click', () => {
-          openGoogleSearch(`Site:boardgamegeek.com (rules OR instructions) "${game.game_name || ''}"`);
-        });
-        const gameSearchButton = document.createElement('button');
-        gameSearchButton.className = 'rules-button rules-search-button';
-        gameSearchButton.type = 'button';
-        gameSearchButton.textContent = 'Google Game';
-        gameSearchButton.setAttribute('aria-label', `Search Google for board game ${game.game_name || 'this game'}`);
-        gameSearchButton.addEventListener('click', () => {
-          openGoogleSearch(`board game "${game.game_name || ''}"`);
-        });
-        td.append(bggRulesButton, gameSearchButton);
+        const searchButton = document.createElement('button');
+        searchButton.className = `rules-button rules-search-button${col.type === 'googleRules' ? ' google-rules-button' : ' google-game-button'}`;
+        searchButton.type = 'button';
+        if (col.type === 'googleRules') {
+          searchButton.textContent = 'RULES';
+          searchButton.setAttribute('aria-label', `Search BoardGameGeek rules for ${game.game_name || 'this game'}`);
+          searchButton.addEventListener('click', () => {
+            openGoogleSearch(`Site:boardgamegeek.com (rules OR instructions) "${game.game_name || ''}"`);
+          });
+        } else {
+          searchButton.textContent = 'Game';
+          searchButton.setAttribute('aria-label', `Search Google for board game ${game.game_name || 'this game'}`);
+          searchButton.addEventListener('click', () => {
+            openGoogleSearch(`board game "${game.game_name || ''}"`);
+          });
+        }
+        td.appendChild(searchButton);
       } else if (col.field && game[col.field] !== undefined && game[col.field] !== null) {
         const value = game[col.field];
         if (col.field === THUMBNAIL_COLUMN.field) {
