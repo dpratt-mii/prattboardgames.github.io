@@ -904,7 +904,8 @@ const QUICKRULES_LIBRARY_FILES = [
   'Arboretum (140934) 1.pdf',
   ...QUICK_RULES_FILES
 ];
-const PDF_SEARCH_FILES = [];
+let pdfSearchFiles = [];
+let pdfSearchLoadPromise = null;
 
 function findQuickRulesFile(game) {
   const bggId = String(game['boardgame.bg_id'] || game.objectid || '').trim();
@@ -920,7 +921,7 @@ function findMatchingPdfFiles(game) {
     .split(/\s+/)
     .filter(token => token.length > 1 && !['and', 'the', 'of', 'for'].includes(token));
   const minimumScore = tokens.length > 1 ? 2 : 1;
-  return PDF_SEARCH_FILES
+  return pdfSearchFiles
     .map(filename => {
       const normalizedFilename = filename.toLowerCase().replace(/[^a-z0-9]+/g, ' ');
       const score = tokens.reduce((total, token) => total + (normalizedFilename.includes(token) ? 1 : 0), 0);
@@ -935,6 +936,28 @@ function openGoogleSearch(query) {
   const url = new URL('https://www.google.com/search');
   url.searchParams.set('q', query);
   window.open(url.toString(), '_blank', 'noopener,noreferrer');
+}
+
+async function discoverPdfSearchFiles() {
+  try {
+    const response = await fetch('pdfs/', { cache: 'no-store' });
+    if (response.ok) {
+      const listing = new DOMParser().parseFromString(await response.text(), 'text/html');
+      const files = [...listing.querySelectorAll('a[href]')]
+        .map(link => decodeURIComponent(new URL(link.getAttribute('href'), response.url).pathname.split('/').pop() || ''))
+        .filter(filename => filename.toLowerCase().endsWith('.pdf'));
+      if (files.length) return [...new Set(files)];
+    }
+  } catch {}
+
+  try {
+    const response = await fetch('pdfs/index.json', { cache: 'no-store' });
+    if (!response.ok) return [];
+    const files = await response.json();
+    return Array.isArray(files) ? files.filter(filename => typeof filename === 'string' && filename.toLowerCase().endsWith('.pdf')) : [];
+  } catch {
+    return [];
+  }
 }
 
 const VALUE3_FIELD = 'boardgame.average';
@@ -1821,10 +1844,40 @@ function render() {
 
   document.getElementById('bodyRows').innerHTML = '';
   if (activeView === 'bookshelf') renderBookshelf(games);
-  else buildRows(games);
+  else {
+    buildRows(games);
+    schedulePdfSearchButtons();
+  }
   document.getElementById('sidebarResultCount').textContent = games.length.toLocaleString('en-US');
   if (activeView !== 'bookshelf') updateAlphaAnchors();
   updateSummaryCards(games);
+}
+
+function createPdfSearchButton(game) {
+  const searchButton = document.createElement('button');
+  searchButton.className = 'rules-button pdf-search-button';
+  searchButton.type = 'button';
+  searchButton.textContent = '🔍';
+  searchButton.setAttribute('aria-label', `Search PDF files for ${game.game_name || 'this game'}`);
+  searchButton.addEventListener('click', () => openPdfSearchDialog(game));
+  return searchButton;
+}
+
+function populatePdfSearchButtons() {
+  document.querySelectorAll('.pdf-search-cell').forEach(cell => {
+    cell.replaceChildren();
+    if (findMatchingPdfFiles(cell.pdfSearchGame).length) {
+      cell.appendChild(createPdfSearchButton(cell.pdfSearchGame));
+    }
+  });
+}
+
+function schedulePdfSearchButtons() {
+  requestAnimationFrame(async () => {
+    pdfSearchLoadPromise ??= discoverPdfSearchFiles();
+    pdfSearchFiles = await pdfSearchLoadPromise;
+    populatePdfSearchButtons();
+  });
 }
 
 let bookshelfGames = [];
@@ -2405,7 +2458,7 @@ function openPdfSearchDialog(game) {
     matches.forEach(filename => {
       const item = document.createElement('li');
       const link = document.createElement('a');
-      link.href = `quickrules/${encodeURIComponent(filename)}`;
+      link.href = `pdfs/${encodeURIComponent(filename)}`;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
       link.textContent = filename;
@@ -3161,14 +3214,8 @@ function buildRows(games) {
           td.addEventListener('contextmenu', event => openRulesPromptContextMenu(event, game));
         }
       } else if (col.type === 'pdfSearch') {
-        td.className = 'rules-cell';
-        const searchButton = document.createElement('button');
-        searchButton.className = 'rules-button pdf-search-button';
-        searchButton.type = 'button';
-        searchButton.textContent = '🔍';
-        searchButton.setAttribute('aria-label', `Search PDF files for ${game.game_name || 'this game'}`);
-        searchButton.addEventListener('click', () => openPdfSearchDialog(game));
-        td.appendChild(searchButton);
+        td.className = 'rules-cell pdf-search-cell';
+        td.pdfSearchGame = game;
       } else if (col.type === 'googleRules' || col.type === 'googleGame') {
         td.className = 'rules-cell';
         const searchButton = document.createElement('button');
