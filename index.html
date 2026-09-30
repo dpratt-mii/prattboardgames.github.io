@@ -49,6 +49,15 @@
     border-color: #cfd4da;
     font-size: 18px;
   }
+  body.collection-view:not(.thumbnail-view) .view-collection-table tbody td {
+    height: auto;
+    padding: 4px 8px;
+    vertical-align: middle;
+  }
+  body.collection-view:not(.thumbnail-view) .view-collection-table .rules-button {
+    min-height: 0;
+    padding: 6px 12px;
+  }
   .view-collection-table tbody tr:nth-child(even) td { background: #fff; }
   .view-collection-table tbody td.title-cell {
     color: #075bbb;
@@ -376,7 +385,7 @@
     color: #fff;
     background: linear-gradient(180deg, #2d6db1 0%, #2a5e9f 100%);
     box-shadow: inset 0 0 0 1px rgba(15, 45, 89, .26), 0 2px 0 rgba(12, 35, 72, .2);
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 800;
     line-height: 1;
     letter-spacing: .02em;
@@ -389,7 +398,7 @@
   .rules-search-button {
     min-width: 120px;
     min-height: 52px;
-    font-size: 21px;
+    font-size: 19px;
   }
   .rules-button.rules-button-pdf { color: #b30b00; border-color: #b30b00; background: #fff; }
   .rules-button.rules-button-pdf:hover, .rules-button.rules-button-pdf:focus { background: #ffece9; }
@@ -1621,7 +1630,7 @@ function buildColGroup(columns = getActiveColumns()) {
   colGroup.innerHTML = '';
   const frag = document.createDocumentFragment();
   const overviewColumnWidth = getActionColumnWidth(['RECAP'], 'rules-button');
-  const rulesColumnWidth = getActionColumnWidth(['RULES'], 'rules-button');
+  const rulesColumnWidth = getActionColumnWidth(['PDF'], 'rules-button rules-button-pdf');
   const searchColumnWidth = getActionColumnWidth(['Rules', 'Game'], 'rules-search-button');
   const collectionWidths = new Map([
     [THUMBNAIL_COLUMN.field, 125],
@@ -3066,9 +3075,9 @@ function buildRows(games) {
         const quickRulesFile = findQuickRulesFile(game);
         if (quickRulesFile) {
           const pdfButton = document.createElement('button');
-          pdfButton.className = 'rules-button';
+          pdfButton.className = 'rules-button rules-button-pdf';
           pdfButton.type = 'button';
-          pdfButton.textContent = 'RULES';
+          pdfButton.textContent = 'PDF';
           pdfButton.setAttribute('aria-label', `Open quick rules PDF for ${game.game_name || 'this game'}`);
           pdfButton.addEventListener('click', () => {
             window.open(`quickrules/${quickRulesFile}`, '_blank', 'noopener,noreferrer');
