@@ -894,7 +894,7 @@ const QUICK_RULES_FILES = [
   'Tsuro of the Seas (124172) 1.pdf',
   'Wingspan_Quick_Reference_Guide(266192).pdf'
 ];
-const PDF_LIBRARY_FILES = [
+const QUICKRULES_LIBRARY_FILES = [
   '10 Minute Heist - The Wizard\'s Tower (194789).pdf',
   '12 Days (130899).pdf',
   '3 Ring Circus (371947).pdf',
@@ -904,11 +904,12 @@ const PDF_LIBRARY_FILES = [
   'Arboretum (140934) 1.pdf',
   ...QUICK_RULES_FILES
 ];
+const PDF_SEARCH_FILES = [];
 
 function findQuickRulesFile(game) {
   const bggId = String(game['boardgame.bg_id'] || game.objectid || '').trim();
   if (!bggId) return '';
-  return PDF_LIBRARY_FILES.find(filename => filename.includes(`(${bggId})`)) || '';
+  return QUICKRULES_LIBRARY_FILES.find(filename => filename.includes(`(${bggId})`)) || '';
 }
 
 function findMatchingPdfFiles(game) {
@@ -919,7 +920,7 @@ function findMatchingPdfFiles(game) {
     .split(/\s+/)
     .filter(token => token.length > 1 && !['and', 'the', 'of', 'for'].includes(token));
   const minimumScore = tokens.length > 1 ? 2 : 1;
-  return PDF_LIBRARY_FILES
+  return PDF_SEARCH_FILES
     .map(filename => {
       const normalizedFilename = filename.toLowerCase().replace(/[^a-z0-9]+/g, ' ');
       const score = tokens.reduce((total, token) => total + (normalizedFilename.includes(token) ? 1 : 0), 0);
@@ -2392,7 +2393,7 @@ function openPdfSearchDialog(game) {
   const content = document.getElementById('rulesDialogContent');
   const matches = findMatchingPdfFiles(game);
   document.getElementById('rulesDialogTitle').textContent = `${game.game_name || 'Game'} — PDF SEARCH`;
-  document.getElementById('rulesDialogSubtitle').textContent = 'Matching files in the quickrules folder.';
+  document.getElementById('rulesDialogSubtitle').textContent = 'Matching files in the pdfs folder.';
   content.replaceChildren();
   if (!matches.length) {
     const empty = document.createElement('p');
