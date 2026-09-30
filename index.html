@@ -400,8 +400,17 @@
     min-height: 52px;
     font-size: 19px;
   }
+  .pdf-search-button {
+    min-width: 52px;
+    min-height: 52px;
+    padding: 10px;
+    font-size: 24px;
+  }
   .rules-button.rules-button-pdf { color: #b30b00; border-color: #b30b00; background: #fff; }
   .rules-button.rules-button-pdf:hover, .rules-button.rules-button-pdf:focus { background: #ffece9; }
+  .pdf-search-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .pdf-search-list a { display: block; padding: 10px 12px; border: 1px solid #d8e1e7; border-radius: 4px; color: #075bbb; background: #fff; overflow-wrap: anywhere; }
+  .pdf-search-list a:hover, .pdf-search-list a:focus { background: #eef6ff; }
   #rulesDialog {
     width: min(1180px, calc(100vw - 32px));
     max-width: 1180px;
@@ -857,6 +866,7 @@ const ADDITIONAL_COLUMNS = [];
 const THUMBNAIL_COLUMN = { header: '', field: 'boardgame.thumbnail' };
 const OVERVIEW_COLUMN = { header: 'RECAP', type: 'overview' };
 const RULES_COLUMN = { header: 'Rules', type: 'rules' };
+const PDF_SEARCH_COLUMN = { header: '', type: 'pdfSearch' };
 const GOOGLE_RULES_COLUMN = { header: 'RULES', type: 'googleRules', group: 'Search' };
 const GOOGLE_GAME_COLUMN = { header: 'GAME', type: 'googleGame', group: 'Search' };
 const QUICK_RULES_FILES = [
@@ -884,11 +894,40 @@ const QUICK_RULES_FILES = [
   'Tsuro of the Seas (124172) 1.pdf',
   'Wingspan_Quick_Reference_Guide(266192).pdf'
 ];
+const PDF_LIBRARY_FILES = [
+  '10 Minute Heist - The Wizard\'s Tower (194789).pdf',
+  '12 Days (130899).pdf',
+  '3 Ring Circus (371947).pdf',
+  'Aerion (267127).pdf',
+  'Age of War (28086).pdf',
+  'Ankh\'or (271530).pdf',
+  'Arboretum (140934) 1.pdf',
+  ...QUICK_RULES_FILES
+];
 
 function findQuickRulesFile(game) {
   const bggId = String(game['boardgame.bg_id'] || game.objectid || '').trim();
   if (!bggId) return '';
-  return QUICK_RULES_FILES.find(filename => filename.includes(`(${bggId})`)) || '';
+  return PDF_LIBRARY_FILES.find(filename => filename.includes(`(${bggId})`)) || '';
+}
+
+function findMatchingPdfFiles(game) {
+  const tokens = String(game.game_name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(token => token.length > 1 && !['and', 'the', 'of', 'for'].includes(token));
+  const minimumScore = tokens.length > 1 ? 2 : 1;
+  return PDF_LIBRARY_FILES
+    .map(filename => {
+      const normalizedFilename = filename.toLowerCase().replace(/[^a-z0-9]+/g, ' ');
+      const score = tokens.reduce((total, token) => total + (normalizedFilename.includes(token) ? 1 : 0), 0);
+      return { filename, score };
+    })
+    .filter(item => item.score >= minimumScore)
+    .sort((left, right) => right.score - left.score || left.filename.localeCompare(right.filename))
+    .map(item => item.filename);
 }
 
 function openGoogleSearch(query) {
@@ -1187,7 +1226,7 @@ function getActiveColumns() {
   const activeColumns = columns.concat(ADDITIONAL_COLUMNS);
   if (activeView !== 'collection') {
     const detailedColumns = thumbnailEnabled ? [THUMBNAIL_COLUMN, ...activeColumns] : activeColumns;
-    return [...detailedColumns, OVERVIEW_COLUMN, RULES_COLUMN, GOOGLE_RULES_COLUMN, GOOGLE_GAME_COLUMN];
+    return [...detailedColumns, OVERVIEW_COLUMN, RULES_COLUMN, PDF_SEARCH_COLUMN, GOOGLE_RULES_COLUMN, GOOGLE_GAME_COLUMN];
   }
   const value3Column = ADDITIONAL_COLUMNS.find(column => column.field === VALUE3_FIELD);
   const averageRatingColumn = value3Column
@@ -1197,7 +1236,7 @@ function getActiveColumns() {
     ? [COLLECTION_COLUMNS[0], averageRatingColumn, ...COLLECTION_COLUMNS.slice(1)]
     : COLLECTION_COLUMNS;
   const visibleColumns = thumbnailEnabled ? [THUMBNAIL_COLUMN, ...collectionColumns] : collectionColumns;
-  return [...visibleColumns, OVERVIEW_COLUMN, RULES_COLUMN, GOOGLE_RULES_COLUMN, GOOGLE_GAME_COLUMN];
+  return [...visibleColumns, OVERVIEW_COLUMN, RULES_COLUMN, PDF_SEARCH_COLUMN, GOOGLE_RULES_COLUMN, GOOGLE_GAME_COLUMN];
 }
 
 function toNumber(value) {
@@ -1631,6 +1670,7 @@ function buildColGroup(columns = getActiveColumns()) {
   const frag = document.createDocumentFragment();
   const overviewColumnWidth = getActionColumnWidth(['RECAP'], 'rules-button');
   const rulesColumnWidth = getActionColumnWidth(['PDF'], 'rules-button rules-button-pdf');
+  const pdfSearchColumnWidth = getActionColumnWidth(['🔍'], 'rules-button pdf-search-button');
   const searchColumnWidth = getActionColumnWidth(['Rules', 'Game'], 'rules-search-button');
   const collectionWidths = new Map([
     [THUMBNAIL_COLUMN.field, 125],
@@ -1648,6 +1688,8 @@ function buildColGroup(columns = getActiveColumns()) {
       ? overviewColumnWidth
       : column.type === 'rules'
       ? rulesColumnWidth
+      : column.type === 'pdfSearch'
+      ? pdfSearchColumnWidth
       : column.type === 'googleRules' || column.type === 'googleGame'
       ? searchColumnWidth
       : activeView === 'collection'
@@ -1695,7 +1737,8 @@ function buildHeader() {
     if (col.type === 'overview') th.classList.add('overview-column-header');
     const label = document.createElement('span');
     label.className = 'col-label';
-    label.textContent = col.header;
+    label.textContent = col.type === 'pdfSearch' ? '🔍' : col.header;
+    if (col.type === 'pdfSearch') label.setAttribute('aria-label', 'Search matching PDFs');
     label.addEventListener('click', () => sortByColumn(index));
     th.appendChild(label);
     const resizer = document.createElement('div');
@@ -2342,6 +2385,36 @@ function openRulesDialog(game) {
 function closeRulesDialog() {
   const dialog = document.getElementById('rulesDialog');
   if (dialog.open) dialog.close();
+}
+
+function openPdfSearchDialog(game) {
+  const dialog = document.getElementById('rulesDialog');
+  const content = document.getElementById('rulesDialogContent');
+  const matches = findMatchingPdfFiles(game);
+  document.getElementById('rulesDialogTitle').textContent = `${game.game_name || 'Game'} — PDF SEARCH`;
+  document.getElementById('rulesDialogSubtitle').textContent = 'Matching files in the quickrules folder.';
+  content.replaceChildren();
+  if (!matches.length) {
+    const empty = document.createElement('p');
+    empty.textContent = 'No similarly named PDF files were found.';
+    content.appendChild(empty);
+  } else {
+    const list = document.createElement('ul');
+    list.className = 'pdf-search-list';
+    matches.forEach(filename => {
+      const item = document.createElement('li');
+      const link = document.createElement('a');
+      link.href = `quickrules/${encodeURIComponent(filename)}`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = filename;
+      item.appendChild(link);
+      list.appendChild(item);
+    });
+    content.appendChild(list);
+  }
+  content.scrollTop = 0;
+  dialog.showModal();
 }
 
 document.getElementById('dialogClose').addEventListener('click', closeGameDialog);
@@ -3086,6 +3159,15 @@ function buildRows(games) {
         } else {
           td.addEventListener('contextmenu', event => openRulesPromptContextMenu(event, game));
         }
+      } else if (col.type === 'pdfSearch') {
+        td.className = 'rules-cell';
+        const searchButton = document.createElement('button');
+        searchButton.className = 'rules-button pdf-search-button';
+        searchButton.type = 'button';
+        searchButton.textContent = '🔍';
+        searchButton.setAttribute('aria-label', `Search PDF files for ${game.game_name || 'this game'}`);
+        searchButton.addEventListener('click', () => openPdfSearchDialog(game));
+        td.appendChild(searchButton);
       } else if (col.type === 'googleRules' || col.type === 'googleGame') {
         td.className = 'rules-cell';
         const searchButton = document.createElement('button');
