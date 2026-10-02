@@ -115,6 +115,8 @@
   .bookshelf-book:nth-child(3n + 2) .bookshelf-cover { border-color: #744f40; background: #ae725d; }
   .bookshelf-book:nth-child(3n) .bookshelf-cover { border-color: #556343; background: #8c9b67; }
   .bookshelf-book span { display: block; max-width: 100%; padding: 3px 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 700; }
+  .bookshelf-stack { display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; gap: 4px; min-width: 0; max-height: 100%; }
+  .bookshelf-stack .bookshelf-book img { max-height: var(--stack-image-height); }
   .bookshelf-book:hover img, .bookshelf-book:focus-visible img, .bookshelf-book:hover .bookshelf-cover, .bookshelf-book:focus-visible .bookshelf-cover { outline: 3px solid #2867a8; outline-offset: 2px; }
   .bookshelf-nav { position: absolute; z-index: 2; top: 50%; transform: translateY(-50%); width: 44px; height: 64px; border: 1px solid #a68b6d; border-radius: 4px; background: #fffdf0ee; color: #254c69; font-size: 40px; cursor: pointer; }
   .bookshelf-nav:disabled { opacity: .35; cursor: default; }
@@ -1988,9 +1990,11 @@ function buildBookshelfPanel(index, capacity) {
         cover.className = 'bookshelf-cover';
         cover.textContent = game.game_name || 'Untitled';
         book.prepend(cover);
+        scheduleBookshelfLayout(panel);
       };
       const image = document.createElement('img');
       image.alt = '';
+      image.addEventListener('load', () => scheduleBookshelfLayout(panel));
       book.appendChild(image);
       let triedSource = false;
       loadThumbnail(image, imageUrl, game.game_name, () => {
@@ -2019,11 +2023,55 @@ function buildBookshelfPanel(index, capacity) {
   return panel;
 }
 
+function scheduleBookshelfLayout(panel) {
+  if (panel.layoutPending) return;
+  panel.layoutPending = true;
+  requestAnimationFrame(() => {
+    panel.layoutPending = false;
+    layoutBookshelfPanel(panel);
+  });
+}
+
+// Two neighbouring images shorter than half the shelf share one slot, stacked.
+function layoutBookshelfPanel(panel) {
+  const rows = [...panel.children];
+  const books = [...panel.querySelectorAll('.bookshelf-book')];
+  if (!panel.isConnected || !books.length) return;
+  if (books.some(book => book.querySelector('img') && !book.querySelector('img').complete)) return;
+  const columns = Number(document.getElementById('bookshelf').style.getPropertyValue('--shelf-columns')) || 1;
+  const place = units => rows.forEach((row, rowIndex) => row.replaceChildren(...units.slice(rowIndex * columns, (rowIndex + 1) * columns)));
+  place(books);
+  const rowStyle = getComputedStyle(rows[0]);
+  const shelfHeight = rows[0].clientHeight - parseFloat(rowStyle.paddingTop) - parseFloat(rowStyle.paddingBottom);
+  const isShort = books.map(book => {
+    const image = book.querySelector('img');
+    return Boolean(image?.naturalWidth) && image.getBoundingClientRect().height < shelfHeight / 2;
+  });
+  const units = [];
+  for (let index = 0; index < books.length; index++) {
+    if (isShort[index] && isShort[index + 1]) {
+      const pair = [books[index], books[index + 1]];
+      const titleHeight = Math.max(...pair.map(book => book.querySelector('span')?.offsetHeight || 0));
+      const stack = document.createElement('div');
+      stack.className = 'bookshelf-stack';
+      stack.style.setProperty('--stack-image-height', `${Math.max(20, (shelfHeight - 4) / 2 - titleHeight)}px`);
+      stack.append(...pair);
+      units.push(stack);
+      index++;
+    } else {
+      units.push(books[index]);
+    }
+  }
+  place(units);
+}
+
 function showBookshelfPage() {
   const capacity = bookshelfCapacity();
   const total = Math.max(1, Math.ceil(bookshelfGames.length / capacity));
   bookshelfIndex = Math.min(bookshelfIndex, total - 1);
-  document.getElementById('bookshelfViewport').replaceChildren(buildBookshelfPanel(bookshelfIndex, capacity));
+  const panel = buildBookshelfPanel(bookshelfIndex, capacity);
+  document.getElementById('bookshelfViewport').replaceChildren(panel);
+  scheduleBookshelfLayout(panel);
   document.getElementById('bookshelfPrev').disabled = bookshelfIndex === 0;
   document.getElementById('bookshelfNext').disabled = bookshelfIndex === total - 1;
   document.getElementById('bookshelfPage').textContent = `${bookshelfIndex + 1} / ${total}`;
@@ -2053,6 +2101,7 @@ async function moveBookshelf(direction) {
   const incoming = buildBookshelfPanel(nextIndex, capacity);
   incoming.style.transform = `translateX(${direction * 100}%)`;
   viewport.appendChild(incoming);
+  scheduleBookshelfLayout(incoming);
   if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     await Promise.all([
       current.animate([{ transform: 'translateX(0)' }, { transform: `translateX(${-direction * 100}%)` }], { duration: 420, easing: 'ease-in-out' }).finished,
