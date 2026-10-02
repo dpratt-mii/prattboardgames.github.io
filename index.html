@@ -989,7 +989,8 @@ async function findTitleThumbnailUrl(gameName) {
   const titleSet = new Set(tokens);
   let best = { filename: '', score: 0 };
   files.forEach(filename => {
-    const fileTokens = titleTokens(filename.replace(/\.[^.]+$/, ''));
+    const baseName = filename.replace(/\.[^.]+$/, '').replace(/[ _-]+(game[ _-]*box|box[ _-]*art|cover)$/i, '');
+    const fileTokens = titleTokens(baseName);
     let score;
     if (fileTokens.join('') === compactTitle) {
       score = 1;
