@@ -1036,6 +1036,7 @@ const COLLECTION_FLAGS = ['own', 'fortrade', 'want', 'wanttobuy', 'wanttoplay', 
 const initialCollectionFilter = new URLSearchParams(window.location.search).get('collection')?.trim().toLowerCase();
 const VIEW_OPTIONS = ['collection', 'detailed', 'bookshelf'];
 const initialView = new URLSearchParams(window.location.search).get('view')?.trim().toLowerCase();
+const initialBookshelfPage = Number.parseInt(new URLSearchParams(window.location.search).get('page'), 10);
 let activeView = VIEW_OPTIONS.includes(initialView) ? initialView : 'collection';
 let thumbnailEnabled = true;
 let selectedCollectionValues = new Set(COLLECTION_FLAGS.includes(initialCollectionFilter)
@@ -1953,6 +1954,7 @@ function schedulePdfSearchButtons() {
 
 let bookshelfGames = [];
 let bookshelfIndex = 0;
+let pendingBookshelfIndex = initialBookshelfPage >= 1 ? initialBookshelfPage - 1 : 0;
 let bookshelfAnimating = false;
 
 function bookshelfCapacity() {
@@ -2025,11 +2027,17 @@ function showBookshelfPage() {
   document.getElementById('bookshelfPrev').disabled = bookshelfIndex === 0;
   document.getElementById('bookshelfNext').disabled = bookshelfIndex === total - 1;
   document.getElementById('bookshelfPage').textContent = `${bookshelfIndex + 1} / ${total}`;
+  if (activeView === 'bookshelf') {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', String(bookshelfIndex + 1));
+    history.replaceState(null, '', url);
+  }
 }
 
 function renderBookshelf(games) {
   bookshelfGames = games;
-  bookshelfIndex = 0;
+  bookshelfIndex = pendingBookshelfIndex;
+  pendingBookshelfIndex = 0;
   bookshelfAnimating = false;
   showBookshelfPage();
 }
@@ -3374,8 +3382,10 @@ function buildRows(games) {
 
 function changeView(nextView) {
   activeView = nextView;
+  pendingBookshelfIndex = 0;
   const url = new URL(window.location.href);
   url.searchParams.set('view', nextView);
+  if (nextView !== 'bookshelf') url.searchParams.delete('page');
   history.replaceState(null, '', url);
   document.body.classList.toggle('bookshelf-view', nextView === 'bookshelf');
   Object.keys(filters).forEach(key => delete filters[key]);
