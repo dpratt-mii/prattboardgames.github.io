@@ -1034,7 +1034,9 @@ const RANK_ID_FIELD = 'boardgames_ranks.id';
 
 const COLLECTION_FLAGS = ['own', 'fortrade', 'want', 'wanttobuy', 'wanttoplay', 'prevowned', 'preordered', 'wishlist'];
 const initialCollectionFilter = new URLSearchParams(window.location.search).get('collection')?.trim().toLowerCase();
-let activeView = 'collection';
+const VIEW_OPTIONS = ['collection', 'detailed', 'bookshelf'];
+const initialView = new URLSearchParams(window.location.search).get('view')?.trim().toLowerCase();
+let activeView = VIEW_OPTIONS.includes(initialView) ? initialView : 'collection';
 let thumbnailEnabled = true;
 let selectedCollectionValues = new Set(COLLECTION_FLAGS.includes(initialCollectionFilter)
   ? [initialCollectionFilter]
@@ -3372,6 +3374,9 @@ function buildRows(games) {
 
 function changeView(nextView) {
   activeView = nextView;
+  const url = new URL(window.location.href);
+  url.searchParams.set('view', nextView);
+  history.replaceState(null, '', url);
   document.body.classList.toggle('bookshelf-view', nextView === 'bookshelf');
   Object.keys(filters).forEach(key => delete filters[key]);
   sortState.colIndex = null;
@@ -3400,10 +3405,12 @@ function loadData() {
       let joinedRows = addJoinedColumns(collectionRows, rankRows, 'boardgames_ranks', 'id');
       joinedRows = addJoinedColumns(joinedRows, detailRows, 'boardgame', 'bg_id');
       allGames = joinedRows.map(normalizeCsvRow);
+      const viewSelect = document.getElementById('viewSelect');
+      viewSelect.value = activeView;
+      document.body.classList.toggle('bookshelf-view', activeView === 'bookshelf');
       buildHeader();
       buildSummaryCards();
       buildAlphaNav();
-      const viewSelect = document.getElementById('viewSelect');
       viewSelect.addEventListener('change', (event) => {
         changeView(event.target.value);
       });
