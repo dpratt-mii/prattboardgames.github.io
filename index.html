@@ -106,11 +106,13 @@
   .bookshelf { display: none; position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; background: #e9e5dd; overflow: hidden; }
   body.bookshelf-view .bookshelf { display: block; }
   .bookshelf-viewport { height: 100%; overflow: hidden; }
-  .bookshelf-panel { position: absolute; inset: 0; box-sizing: border-box; display: grid; grid-template-rows: repeat(var(--shelf-rows), minmax(0, 1fr)); padding: 20px 56px 48px; gap: 12px; }
+  .bookshelf-panel { position: absolute; inset: 0; box-sizing: border-box; display: grid; grid-template-rows: repeat(var(--shelf-rows), minmax(0, 1fr)); padding: 20px 56px 48px; gap: 12px; visibility: hidden; }
+  .bookshelf-panel.layout-ready { visibility: visible; }
   .bookshelf-row { position: relative; display: grid; grid-template-columns: repeat(var(--shelf-columns), minmax(0, 1fr)); align-items: end; gap: 8px; min-height: 0; padding: 8px 4px 18px; box-sizing: border-box; background: linear-gradient(90deg, #d7c9b4, #f1e8d8 20%, #eee4d3 80%, #d4c5ad); border: 1px solid #c9b89f; }
   .bookshelf-row::after { content: ''; position: absolute; bottom: 0; left: -4px; right: -4px; height: 15px; background: linear-gradient(#997555 0 3px, #b78e67 3px 10px, #75553d); box-shadow: 0 8px 12px #55402c55; pointer-events: none; }
   .bookshelf-book { display: flex; flex-direction: column; align-items: center; justify-content: end; min-width: 0; max-height: 100%; padding: 0; border: 0; background: transparent; color: #283b45; cursor: pointer; }
-  .bookshelf-row { display: flex; align-items: flex-end; overflow-x: auto; scrollbar-width: thin; }
+  .bookshelf-row { display: flex; align-items: flex-end; justify-content: space-evenly; overflow: hidden; }
+  .bookshelf-row::after { left: 0; right: 0; }
   .bookshelf-book, .bookshelf-stack { flex: 0 0 auto; }
   .bookshelf-book img { display: block; width: auto; height: var(--rated-cover-height, 148px); max-width: none; box-shadow: 2px 3px 6px #44332666; }
   .bookshelf-cover { display: grid; place-items: center; box-sizing: border-box; width: min(100%, 100px); height: min(20vh, 148px); min-height: 70px; padding: 8px; border-left: 6px solid #355368; background: #527a83; color: #fff; box-shadow: 2px 3px 6px #44332666; font-size: 12px; font-weight: 700; text-align: center; overflow-wrap: anywhere; overflow: hidden; }
@@ -1976,6 +1978,7 @@ function bookshelfCapacity() {
 function buildBookshelfPanel(index, capacity) {
   const panel = document.createElement('div');
   panel.className = 'bookshelf-panel';
+  panel.layoutReady = new Promise(resolve => { panel.resolveLayoutReady = resolve; });
   const columns = Number(document.getElementById('bookshelf').style.getPropertyValue('--shelf-columns'));
   const rows = Number(document.getElementById('bookshelf').style.getPropertyValue('--shelf-rows'));
   const games = bookshelfGames.slice(index * capacity, (index + 1) * capacity);
@@ -1989,6 +1992,7 @@ function buildBookshelfPanel(index, capacity) {
     games.slice(rowIndex * columns, (rowIndex + 1) * columns).forEach(game => {
       const book = document.createElement('button');
       book.className = 'bookshelf-book';
+      book.dataset.coverReady = 'false';
       const rating = getAverageRating(game);
       const [, maximumRating] = bookshelfRatingRange;
       book.dataset.heightScale = rating === null || rating <= 6.5 ? 0.5
@@ -2002,11 +2006,15 @@ function buildBookshelfPanel(index, capacity) {
         cover.className = 'bookshelf-cover';
         cover.textContent = game.game_name || 'Untitled';
         book.prepend(cover);
+        book.dataset.coverReady = 'true';
         scheduleBookshelfLayout(panel);
       };
       const image = document.createElement('img');
       image.alt = '';
-      image.addEventListener('load', () => scheduleBookshelfLayout(panel));
+      image.addEventListener('load', () => {
+        book.dataset.coverReady = 'true';
+        scheduleBookshelfLayout(panel);
+      });
       book.appendChild(image);
       let triedSource = false;
       loadThumbnail(image, imageUrl, game.game_name, () => {
@@ -2048,8 +2056,13 @@ function scheduleBookshelfLayout(panel) {
 function layoutBookshelfPanel(panel) {
   const rows = [...panel.children];
   const books = [...panel.querySelectorAll('.bookshelf-book')];
-  if (!panel.isConnected || !books.length) return;
-  if (books.some(book => book.querySelector('img') && !book.querySelector('img').complete)) return;
+  if (!panel.isConnected) return;
+  if (!books.length) {
+    panel.classList.add('layout-ready');
+    panel.resolveLayoutReady();
+    return;
+  }
+  if (books.some(book => book.dataset.coverReady !== 'true')) return;
   const columns = Number(document.getElementById('bookshelf').style.getPropertyValue('--shelf-columns')) || 1;
   const place = units => rows.forEach((row, rowIndex) => row.replaceChildren(...units.slice(rowIndex * columns, (rowIndex + 1) * columns)));
   place(books);
@@ -2085,6 +2098,23 @@ function layoutBookshelfPanel(panel) {
     }
   }
   place(units);
+  const fitScale = Math.min(1, ...rows.map(row => {
+    const style = getComputedStyle(row);
+    const items = [...row.children];
+    const availableWidth = row.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+      - Math.max(0, items.length - 1) * parseFloat(style.columnGap);
+    const requiredWidth = items.reduce((total, item) => total + item.getBoundingClientRect().width, 0);
+    return requiredWidth ? Math.max(0, availableWidth) / requiredWidth : 1;
+  }));
+  if (fitScale < 1) {
+    books.forEach(book => {
+      const height = parseFloat(book.style.getPropertyValue('--rated-cover-height'));
+      book.style.setProperty('--rated-cover-height', `${height * fitScale}px`);
+      book.style.width = `${parseFloat(book.style.width) * fitScale}px`;
+    });
+  }
+  panel.classList.add('layout-ready');
+  panel.resolveLayoutReady();
 }
 
 function showBookshelfPage() {
@@ -2126,6 +2156,8 @@ async function moveBookshelf(direction) {
   incoming.style.transform = `translateX(${direction * 100}%)`;
   viewport.appendChild(incoming);
   scheduleBookshelfLayout(incoming);
+  await incoming.layoutReady;
+  if (!incoming.isConnected || activeView !== 'bookshelf') return;
   if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     await Promise.all([
       current.animate([{ transform: 'translateX(0)' }, { transform: `translateX(${-direction * 100}%)` }], { duration: 420, easing: 'ease-in-out' }).finished,
