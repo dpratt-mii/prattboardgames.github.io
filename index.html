@@ -110,7 +110,9 @@
   .bookshelf-row { position: relative; display: grid; grid-template-columns: repeat(var(--shelf-columns), minmax(0, 1fr)); align-items: end; gap: 8px; min-height: 0; padding: 8px 4px 18px; box-sizing: border-box; background: linear-gradient(90deg, #d7c9b4, #f1e8d8 20%, #eee4d3 80%, #d4c5ad); border: 1px solid #c9b89f; }
   .bookshelf-row::after { content: ''; position: absolute; bottom: 0; left: -4px; right: -4px; height: 15px; background: linear-gradient(#997555 0 3px, #b78e67 3px 10px, #75553d); box-shadow: 0 8px 12px #55402c55; pointer-events: none; }
   .bookshelf-book { display: flex; flex-direction: column; align-items: center; justify-content: end; min-width: 0; max-height: 100%; padding: 0; border: 0; background: transparent; color: #283b45; cursor: pointer; }
-  .bookshelf-book img { display: block; width: auto; height: auto; max-width: 100%; max-height: var(--rated-cover-height, 148px); box-shadow: 2px 3px 6px #44332666; }
+  .bookshelf-row { display: flex; align-items: flex-end; overflow-x: auto; scrollbar-width: thin; }
+  .bookshelf-book, .bookshelf-stack { flex: 0 0 auto; }
+  .bookshelf-book img { display: block; width: auto; height: var(--rated-cover-height, 148px); max-width: none; box-shadow: 2px 3px 6px #44332666; }
   .bookshelf-cover { display: grid; place-items: center; box-sizing: border-box; width: min(100%, 100px); height: min(20vh, 148px); min-height: 70px; padding: 8px; border-left: 6px solid #355368; background: #527a83; color: #fff; box-shadow: 2px 3px 6px #44332666; font-size: 12px; font-weight: 700; text-align: center; overflow-wrap: anywhere; overflow: hidden; }
   .bookshelf-book .bookshelf-cover { height: var(--rated-cover-height, 148px); min-height: 0; }
   .bookshelf-book:nth-child(3n + 2) .bookshelf-cover { border-color: #744f40; background: #ae725d; }
@@ -2052,11 +2054,15 @@ function layoutBookshelfPanel(panel) {
   const place = units => rows.forEach((row, rowIndex) => row.replaceChildren(...units.slice(rowIndex * columns, (rowIndex + 1) * columns)));
   place(books);
   const rowStyle = getComputedStyle(rows[0]);
-  const shelfHeight = rows[0].clientHeight - parseFloat(rowStyle.paddingTop) - parseFloat(rowStyle.paddingBottom);
+  const shelfHeight = rows[0].offsetHeight - parseFloat(rowStyle.borderTopWidth) - parseFloat(rowStyle.borderBottomWidth)
+    - parseFloat(rowStyle.paddingTop) - parseFloat(rowStyle.paddingBottom) - 12;
   books.forEach(book => {
     const titleHeight = book.querySelector('span')?.offsetHeight || 0;
     const coverHeight = Math.max(0, shelfHeight - titleHeight) * Number(book.dataset.heightScale);
     book.style.setProperty('--rated-cover-height', `${coverHeight}px`);
+    const image = book.querySelector('img');
+    const coverWidth = image?.naturalHeight ? coverHeight * image.naturalWidth / image.naturalHeight : 100;
+    book.style.width = `${coverWidth}px`;
   });
   const isShort = books.map(book => {
     const image = book.querySelector('img');
