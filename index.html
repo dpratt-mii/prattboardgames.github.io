@@ -110,7 +110,7 @@
   .bookshelf-row { position: relative; display: grid; grid-template-columns: repeat(var(--shelf-columns), minmax(0, 1fr)); align-items: end; gap: 8px; min-height: 0; padding: 8px 4px 18px; box-sizing: border-box; background: linear-gradient(90deg, #d7c9b4, #f1e8d8 20%, #eee4d3 80%, #d4c5ad); border: 1px solid #c9b89f; }
   .bookshelf-row::after { content: ''; position: absolute; bottom: 0; left: -4px; right: -4px; height: 15px; background: linear-gradient(#997555 0 3px, #b78e67 3px 10px, #75553d); box-shadow: 0 8px 12px #55402c55; pointer-events: none; }
   .bookshelf-book { display: flex; flex-direction: column; align-items: center; justify-content: end; min-width: 0; max-height: 100%; padding: 0; border: 0; background: transparent; color: #283b45; cursor: pointer; }
-  .bookshelf-book img { display: block; width: min(100%, 112px); height: var(--rated-cover-height, 148px); object-fit: cover; box-shadow: 2px 3px 6px #44332666; }
+  .bookshelf-book img { display: block; width: auto; height: auto; max-width: 100%; max-height: var(--rated-cover-height, 148px); box-shadow: 2px 3px 6px #44332666; }
   .bookshelf-cover { display: grid; place-items: center; box-sizing: border-box; width: min(100%, 100px); height: min(20vh, 148px); min-height: 70px; padding: 8px; border-left: 6px solid #355368; background: #527a83; color: #fff; box-shadow: 2px 3px 6px #44332666; font-size: 12px; font-weight: 700; text-align: center; overflow-wrap: anywhere; overflow: hidden; }
   .bookshelf-book .bookshelf-cover { height: var(--rated-cover-height, 148px); min-height: 0; }
   .bookshelf-book:nth-child(3n + 2) .bookshelf-cover { border-color: #744f40; background: #ae725d; }
