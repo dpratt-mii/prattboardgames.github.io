@@ -1990,9 +1990,9 @@ function buildBookshelfPanel(index, capacity) {
       const book = document.createElement('button');
       book.className = 'bookshelf-book';
       const rating = getAverageRating(game);
-      const [minimumRating, maximumRating] = bookshelfRatingRange;
-      book.dataset.heightScale = rating === null ? 0.5 : maximumRating === minimumRating
-        ? 1 : 0.5 + 0.5 * (rating - minimumRating) / (maximumRating - minimumRating);
+      const [, maximumRating] = bookshelfRatingRange;
+      book.dataset.heightScale = rating === null || rating <= 6.5 ? 0.5
+        : 0.5 + 0.5 * (rating - 6.5) / (maximumRating - 6.5);
       book.type = 'button';
       book.title = game.game_name || 'Game details';
       book.setAttribute('aria-label', `Open ${game.game_name || 'game'} details`);
