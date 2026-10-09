@@ -129,32 +129,44 @@
   #bookshelfNext { right: 6px; }
   .bookshelf-page { position: absolute; z-index: 2; bottom: 10px; left: 50%; transform: translateX(-50%); padding: 3px 9px; color: #263c48; background: #fffdf0dd; font-size: 12px; }
   .bookshelf-empty { align-self: center; justify-self: center; grid-column: 1 / -1; color: #354752; }
-  body.boxed-bookshelf-view .bookshelf { background: #302825; }
-  body.boxed-bookshelf-view .bookshelf-panel { gap: 0; padding-top: 18px; }
+  body.boxed-bookshelf-view .bookshelf { background: linear-gradient(90deg, #554331, #80664b 8%, #65503b 18%, #735a42 82%, #584431); }
+  body.boxed-bookshelf-view .bookshelf-panel { gap: 0; padding: 18px 56px 48px; }
   body.boxed-bookshelf-view .bookshelf-row {
-    padding: 18px 16px 26px 66px;
-    border: 10px ridge #775442;
-    border-bottom-width: 18px;
-    background: repeating-linear-gradient(92deg, #352925 0 3px, #382c27 3px 9px, #332823 9px 13px);
-    box-shadow: inset 0 12px 18px #0008;
+    padding: 18px 18px 30px 70px;
+    border: 11px ridge #8b6446;
+    border-top-color: #bc9064;
+    border-left-color: #684832;
+    border-bottom: 20px ridge #422b1d;
+    background:
+      repeating-linear-gradient(2deg, transparent 0 12px, #d6a36b0b 13px, transparent 15px 28px),
+      repeating-linear-gradient(91deg, #38271e 0 2px, #412c20 2px 6px, #34231b 6px 9px, #493124 9px 14px);
+    box-shadow: inset 0 14px 24px #120b08cc, inset 0 1px 0 #d2a77c66, 0 5px 10px #120b08aa;
   }
-  body.boxed-bookshelf-view .bookshelf-row::after { height: 12px; background: linear-gradient(#b68b65, #79553e 45%, #493426); box-shadow: inset 0 2px 0 #d2ac81; }
+  body.boxed-bookshelf-view .bookshelf-row::after {
+    height: 14px;
+    background: repeating-linear-gradient(2deg, transparent 0 5px, #e0b27b22 6px, transparent 8px 13px), linear-gradient(#c39563 0%, #9a704a 18%, #68462d 76%, #352217 100%);
+    border-top: 1px solid #e0ba88;
+    box-shadow: inset 0 2px 0 #e1bb8b77, 0 4px 8px #160d09aa;
+  }
   body.boxed-bookshelf-view .bookshelf-row::before {
     content: attr(data-alphabet);
     position: absolute;
     top: 0;
-    bottom: 12px;
+    bottom: 14px;
     left: 0;
-    width: 48px;
+    width: 50px;
     display: grid;
     place-items: center;
-    border-right: 6px ridge #906c50;
-    background: repeating-linear-gradient(88deg, #684937 0 3px, #704f3c 3px 8px);
-    color: #ead1a6;
+    border: 4px ridge #a47a4e;
+    border-left: 0;
+    border-top: 0;
+    background: linear-gradient(90deg, #513823, #745333 22%, #5c4129 75%, #38271d);
+    color: #f0d8a7;
     font: 700 22px Georgia, serif;
-    text-shadow: 0 2px 2px #251a15;
+    text-shadow: 0 1px 1px #28180e, 0 0 7px #e1bc7955;
+    box-shadow: inset -4px 0 5px #1b100a88;
   }
-  body.boxed-bookshelf-view .bookshelf-book { color: #f0e3d4; }
+  body.boxed-bookshelf-view .bookshelf-book { color: #eadbc6; }
   body.boxed-bookshelf-view .bookshelf-empty { color: #f0e3d4; }
   @media (max-width: 600px) {
     .bookshelf-panel { padding: 12px 40px 44px; }
